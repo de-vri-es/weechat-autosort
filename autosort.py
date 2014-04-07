@@ -17,13 +17,17 @@
 #
 
 import weechat
+import fnmatch
 
-SCRIPT_NAME     = "autosort_buffers"
+SCRIPT_NAME     = "autosort"
 SCRIPT_AUTHOR   = "Maarten de Vries <maarten@de-vri.es>"
-SCRIPT_VERSION  = "1.0"
-SCRIPT_LICENSE  = "GPL3"
+SCRIPT_VERSION  = "1.1"
+SCRIPT_LICENSE  = "GPLv3"
 SCRIPT_DESC     = "Automatically keeps buffers grouped by server and sorted by name."
+CONFIG_PREFIX   = "plugins.var.python." + SCRIPT_NAME
 
+priorities = None
+group_irc  = True
 
 class Buffer:
 	''' Represents a buffer in Weechat. '''
@@ -31,35 +35,11 @@ class Buffer:
 	def __init__(self, name):
 		''' Construct a buffer from a buffer name. '''
 		self.full_name = name
-		buffer_info = name.split('.', 1)
-		self.server, self.name = buffer_info if len(buffer_info) == 2 else (None, name)
-
-	@property
-	def is_server_buffer(self):
-		''' True if the buffer is a server buffer. '''
-		return self.server == 'server'
+		self.info = name.split('.')
 
 	def __str__(self):
 		''' Get a string representation of the buffer. '''
 		return self.full_name
-
-
-class Server:
-	''' Represents a server/network in Weechat. '''
-
-	def __init__(self, server_buffer = None, buffers = None):
-		''' Construct a server from a server buffer and a buffer list. '''
-		self.server_buffer = server_buffer
-		self.buffers = buffers or []
-
-	@property
-	def name(self):
-		''' Name of the server. '''
-		return self.server_buffer.name
-
-	def __str__(self):
-		''' Get a string representation of the server. '''
-		return '{}[{}]'.format(self.server_buffer.full_name, ','.join(map(str, self.buffers)))
 
 
 def get_buffers():
@@ -69,39 +49,60 @@ def get_buffers():
 	buffer_list = weechat.infolist_get("buffer", "", "")
 
 	while weechat.infolist_next(buffer_list):
-		buffers.append(Buffer(weechat.infolist_string(buffer_list, "name")))
+		buffers.append(Buffer(weechat.infolist_string(buffer_list, 'full_name')))
 
 	weechat.infolist_free(buffer_list)
 	return buffers
 
 
-def sort_key(thing):
-	''' Get the name of a thing. '''
-	return thing.name.lower()
+def process_info(buffer):
+	'''
+	Get a processes list of buffer name components.
+	This function modifies IRC buffers to group them under their server buffer if group_irc is set.
+	'''
+	result = list(buffer.info)
+	if group_irc and len(buffer.info) == 3 and buffer.info[0] == 'irc' and buffer.info[1] != 'server':
+		result.insert(1, 'server')
+	return result;
 
 
-def sort_buffers(buffers):
+def get_priority(word, priorities):
+	''' Get the priority of a word according to a priority list. '''
+	if priorities == None:
+		return None, None
+
+	highest = 0
+	for i, (pattern, priority, children) in enumerate(priorities):
+		highest = max(highest, priority)
+		if fnmatch.fnmatchcase(word, pattern):
+			return priority, children
+
+	return highest + 1, None
+
+
+def sort_key(priorities_):
+	''' Create a sort key function for a priority list. '''
+
+	''' Get the sort key for a buffer. '''
+	def key(buffer):
+		priorities = priorities_
+		result  = []
+		for word in process_info(buffer):
+			priority, priorities = get_priority(word, priorities)
+			result.append((priority, word))
+
+		weechat.prnt('NULL', buffer.full_name + ': ' + str(result) + '  --  ' + str(priorities_))
+		return result
+	return key
+
+
+def sort_buffers(buffers, priorities):
 	'''
 	Sort a buffer list by name, grouped by server.
 	Buffers without a server are sorted after the rest.
 	'''
 
-	servers = {b.name: Server(b) for b in buffers if b.is_server_buffer}
-	misc    = []
-
-	# Add non-server buffers to their server or the misc list if they have no server.
-	for buf in buffers:
-		if not buf.is_server_buffer:
-			(servers[buf.server].buffers if buf.server else misc).append(buf)
-
-	# Add it all together in the right order.
-	result = []
-	for server in sorted(servers.values(), key = sort_key):
-		result.append(server.server_buffer)
-		result.extend(sorted(server.buffers, key = sort_key))
-	result.extend(sorted(misc, key = sort_key))
-
-	return result
+	return sorted(buffers, key=sort_key(priorities))
 
 
 def apply_buffer_order(buffers):
@@ -111,17 +112,70 @@ def apply_buffer_order(buffers):
 		weechat.command('', '/buffer swap {} {}'.format(buf.full_name, i))
 		i += 1
 
+def get_config_string(name):
+	return weechat.config_get_plugin(name)
+
+def get_config_bool(name):
+	return weechat.config_get_plugin(name) == 'on'
+
+def get_config_int(name):
+	return int(weechat.config_get_plugin(name))
+
+def get_config_order(prefix):
+	if not weechat.config_is_set_plugin(prefix):
+		return None
+
+	result  = []
+	for entry in get_config_string(prefix).split(' '):
+		try:
+			pattern, priority = entry.rsplit(':', 2)
+			priority = int(priority)
+			result.append((pattern, priority, get_config_order(prefix + '.' + pattern)))
+		except Exception:
+			raise RuntimeError("Invalid pattern `" + entry + "' in configuration option autosort." + prefix + ".")
+
+	return result
 
 
-def on_buffers_changed(*args, **kwargs):
+def parse_order_pattern(pattern):
+	components = rsplit(':', 2)
+	if len(components) != 2: raise RuntimeError("invalid pattern `" + pattern + "'")
+	return tuple(components)
+
+def do_sort_buffers(*args, **kwargs):
 	''' Callback called whenever the buffer list changes. '''
-	apply_buffer_order(sort_buffers(get_buffers()))
+	weechat.prnt('NULL', 'Configured priorities: ' + str(priorities))
+	buffers = get_buffers()
+	apply_buffer_order(sort_buffers(buffers, priorities))
 	return weechat.WEECHAT_RC_OK
 
 
+def reload_configuration(*args, **kwargs):
+	global priorities
+	global group_irc
+	init_configuration()
+	priorities = get_config_order('order')
+	group_irc  = get_config_bool('group_irc')
+	do_sort_buffers()
+	return weechat.WEECHAT_RC_OK
+
+
+def init_configuration():
+	defaults = {
+		'order':     'core:0 irc:1',
+		'order.irc': 'server:0',
+		'group_irc': 'on',
+	}
+
+	for option, default in defaults.items():
+		if not weechat.config_is_set_plugin(option):
+			weechat.config_set_plugin(option, default)
+
+
 if weechat.register(SCRIPT_NAME, SCRIPT_AUTHOR, SCRIPT_VERSION, SCRIPT_LICENSE, SCRIPT_DESC, "", ""):
-	weechat.hook_signal("buffer_opened", "on_buffers_changed", "")
-	weechat.hook_signal("buffer_merged", "on_buffers_changed", "")
-	weechat.hook_signal("buffer_unmerged", "on_buffers_changed", "")
-	weechat.hook_signal("buffer_renamed", "on_buffers_changed", "")
-	on_buffers_changed()
+	weechat.hook_signal("buffer_opened",   "do_sort_buffers", "")
+	weechat.hook_signal("buffer_merged",   "do_sort_buffers", "")
+	weechat.hook_signal("buffer_unmerged", "do_sort_buffers", "")
+	weechat.hook_signal("buffer_renamed",  "do_sort_buffers", "")
+	weechat.hook_config(CONFIG_PREFIX + ".*", "reload_configuration", "")
+	reload_configuration()
