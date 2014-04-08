@@ -32,8 +32,15 @@ group_irc      = True
 case_sensitive = False
 highest        = 0
 
-def log(message):
-	weechat.prnt('NULL', '[autosort] ' + str(message))
+
+def pad(sequence, length, padding = None):
+	''' Pad a list until is has a certain length. '''
+	return sequence + [padding] * max(0, (length - len(sequence)))
+
+
+def log(message, buffer = 'NULL'):
+	weechat.prnt(buffer, '[autosort] ' + str(message))
+
 
 class Buffer:
 	''' Represents a buffer in Weechat. '''
@@ -213,6 +220,52 @@ def load_configuration():
 	rules, highest = read_order_rules(rules_file)
 
 
+def call_command(data, buffer, old_command, args, subcommands):
+	''' Call a subccommand from a dictionary. '''
+	subcommand, tail = pad(args.split(' ', 1), 2, '')
+	child            = subcommands.get(subcommand)
+	command          = old_command + [subcommand]
+
+	if isinstance(child, dict):
+		return call_command(data, buffer, command, tail, child)
+	elif callable(child):
+		return child(data, buffer, command, tail)
+
+	log(' '.join(command) + ": command not found");
+	return weechat.WEECHAT_RC_ERROR
+
+
+def command_rule_list(data, buffer, command, args):
+	return weechat.WEECHAT_RC_OK
+
+
+def command_rule_add(data, buffer, command, args):
+	return weechat.WEECHAT_RC_OK
+
+
+def command_rule_del(data, buffer, command, args):
+	return weechat.WEECHAT_RC_OK
+
+
+def command_rule_move(data, buffer, command, args):
+	return weechat.WEECHAT_RC_OK
+
+
+def command_rule_swap(data, buffer, command, args):
+	return weechat.WEECHAT_RC_OK
+
+
+commands = {
+	'rule': {
+		'list': command_rule_list,
+		'add':  command_rule_add,
+		'del':  command_rule_del,
+		'move': command_rule_move,
+		'swap': command_rule_swap,
+	}
+}
+
+
 def on_buffers_changed(*args, **kwargs):
 	''' Called whenever the buffer list changes. '''
 	apply_buffer_order(sort_buffers(get_buffers(), rules))
@@ -230,10 +283,17 @@ def on_config_changed(*args, **kwargs):
 	return weechat.WEECHAT_RC_OK
 
 
+def on_autosort_command(data, buffer, args):
+	''' Called when the autosort command is invoked. '''
+	return call_command(data, buffer, ['/autosort'], args, commands)
+
+
+
 if weechat.register(SCRIPT_NAME, SCRIPT_AUTHOR, SCRIPT_VERSION, SCRIPT_LICENSE, SCRIPT_DESC, "", ""):
-	weechat.hook_signal("buffer_opened",   "on_buffers_changed", "")
-	weechat.hook_signal("buffer_merged",   "on_buffers_changed", "")
-	weechat.hook_signal("buffer_unmerged", "on_buffers_changed", "")
-	weechat.hook_signal("buffer_renamed",  "on_buffers_changed", "")
-	weechat.hook_config(CONFIG_PREFIX + ".*", "on_config_changed", "")
+	weechat.hook_signal('buffer_opened',   'on_buffers_changed', '')
+	weechat.hook_signal('buffer_merged',   'on_buffers_changed', '')
+	weechat.hook_signal('buffer_unmerged', 'on_buffers_changed', '')
+	weechat.hook_signal('buffer_renamed',  'on_buffers_changed', '')
+	weechat.hook_config(CONFIG_PREFIX + '.*', 'on_config_changed', '')
+	weechat.hook_command('autosort', '', '', '', '', 'on_autosort_command', 'NULL')
 	on_config_changed()
