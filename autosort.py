@@ -57,6 +57,10 @@ def get_buffers():
 	while weechat.infolist_next(buffer_list):
 		name   = weechat.infolist_string (buffer_list, 'full_name')
 		number = weechat.infolist_integer(buffer_list, 'number')
+
+		# Buffer is merged with one we already have in the list, skip it.
+		if number <= len(buffers):
+			continue
 		buffers.append(Buffer(name))
 
 	weechat.infolist_free(buffer_list)
@@ -89,9 +93,8 @@ def sort_key(rules):
 		for word in process_info(buffer):
 			name += ("." if name else "") + word
 			result.append((get_priority(name, rules), word if case_sensitive else word.lower()))
-
-		weechat.prnt('NULL', buffer.full_name + ': ' + str(result))
 		return result
+
 	return key
 
 
