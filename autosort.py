@@ -17,21 +17,30 @@
 #
 
 import weechat
-import re
 import os.path
+import re
+import json
 
 SCRIPT_NAME     = "autosort"
 SCRIPT_AUTHOR   = "Maarten de Vries <maarten@de-vri.es>"
 SCRIPT_VERSION  = "1.1"
 SCRIPT_LICENSE  = "GPLv3"
-SCRIPT_DESC     = "Automatically keeps buffers grouped by server and sorted by name."
-CONFIG_PREFIX   = "plugins.var.python.autosort"
+SCRIPT_DESC     = "Automatically keeps buffers sorted just the way you want to."
 
+
+options        = {}
 rules          = []
 group_irc      = True
 case_sensitive = False
 highest        = 0
+default_rules  = json.dumps([
+	('core',  0),
+	('irc',   2),
+	('[^.]+', 1),
 
+	('irc[.]server',  1),
+	('irc[.]irc_raw', 0),
+])
 
 def pad(sequence, length, padding = None):
 	''' Pad a list until is has a certain length. '''
@@ -85,8 +94,8 @@ def process_info(buffer):
 	return result;
 
 
-def get_priority(name, rules):
-	''' Get the sort priority of a partial name according to a rule list. '''
+def get_score(name, rules):
+	''' Get the sort score of a partial name according to a rule list. '''
 	for rule in rules:
 		if rule[0].match(name): return rule[1]
 	return highest
@@ -99,7 +108,7 @@ def sort_key(rules):
 		name    = ""
 		for word in process_info(buffer):
 			name += ("." if name else "") + word
-			result.append((get_priority(name, rules), word if case_sensitive else word.lower()))
+			result.append((get_score(name, rules), word if case_sensitive else word.lower()))
 		return result
 
 	return key
@@ -120,104 +129,107 @@ def apply_buffer_order(buffers):
 		weechat.command('', '/buffer swap {} {}'.format(buf.full_name, i))
 		i += 1
 
-def get_config_string(name):
-	return weechat.config_get_plugin(name)
 
-def get_config_bool(name):
-	return weechat.config_string_to_boolean(weechat.config_get_plugin(name))
-
-def get_config_int(name):
-	return int(weechat.config_get_plugin(name))
-
-def resolve_path(path):
-	return os.path.join(weechat.info_get('weechat_dir', 'NULL'), path)
-
-
-def parse_order_rule(rule):
-	''' Parse an order rule '''
-	match = parse_order_rule.regex.match(rule)
-	if not match:
-		raise RuntimeError("Invalid rule: expected `{regex} = {priority}'\", got `" + rule + "'")
-	try:
-		return re.compile('^' + match.group(1).strip() + '$'), int(match.group(2)) if match else None
-	except Exception as e:
-		raise RuntimeError("Invalid regex: " + str(e) +  " in rule `" + rule + "'")
-
-parse_order_rule.regex = re.compile('^(.*)\\s*=\\s*([+-]?\\d+)$')
-
-
-def read_order_rules(filename):
-	''' Read order rules from a file. '''
+def parse_rules(blob):
+	''' Parse rules from a string. '''
 	result = []
 
+	try:
+		decoded = json.loads(blob)
+	except Exception:
+		log("Invalid rules: expected JSON encoded list of pairs, got \"" + blob + "\".")
+		return [], 0
+
 	highest = 0
-	with open(resolve_path(filename)) as file:
-		i = -1
-		for line in file:
-			i += 1
+	for rule in decoded:
+		# Rules must be a regex,score pair.
+		if len(rule) != 2:
+			log("Invalid rule: expected [regex, score], got " + str(rule) + ". Rule ignored.")
+			continue
 
-			line = line.strip()
-			if not line or line[0] == '#':
-				continue
+		# Rules must have a valid regex.
+		try:
+			regex = re.compile('^' + rule[0] + '$')
+		except Exception as error:
+			log("Invalid regex: " + str(e) + " in \"" + rule[0] + "\". Rule ignored.")
+			continue
 
-			try:
-				rule = parse_order_rule(line)
-			except Exception as e:
-				log(filename + ":" + str(i) + ": " + str(e) + ". Rule ignored.")
-				continue
-			highest = max(highest, rule[1])
-			result.append(rule)
+		# Rules must have a valid score.
+		try:
+			score = int(rule[1])
+		except Exception as error:
+			log("Invalid score: expected an integer, got " + str(rule[1]) + ". Rule ignored.")
+			continue
+
+		highest = max(highest, score + 1)
+		result.append((regex, score))
 
 	return result, highest
 
-
-def write_default_rules(filename):
-	''' Write default order rules to a file. '''
-	with open(filename, 'w+') as file:
-		file.write(''
-			+ '# Sort core buffer first, then non-IRC buffers, then IRC buffers.\n'
-			+ 'core  = 0\n'
-			+ 'irc   = 2\n'
-			+ '[^.]+ = 1\n'
-			+ '\n'
-			+ '# Sort irc_raw buffer first, then server buffers, then rest.\n'
-			+ 'irc.irc_raw = 0\n'
-			+ 'irc.server  = 1\n'
-		)
+def encode_rules(rules):
+	''' Encode the rules for storage. '''
+	return json.dumps(map(lambda x: (x[0].pattern[1:-1], x[1]),rules))
 
 
-def init_configuration():
-	''' Initialize the configuration with default values. '''
+def init_config():
+	''' Initialize the configuration. '''
 
-	defaults = {
-		'rules_file':     'autosort_rules.txt',
-		'group_irc':      'on',
-		'case_sensitive': 'off',
-	}
+	config_file = weechat.config_new('autosort', '', '')
+	if not config_file:
+		log('Failed to initialize configuration file. Got: ' + str(config_file))
+	else:
+		sorting_section = weechat.config_new_section(config_file, 'sorting', False, False, '', '', '', '', '', '', '', '', '', '')
 
-	# Set defaults for unset options.
-	for option, default in defaults.items():
-		if not weechat.config_is_set_plugin(option):
-			weechat.config_set_plugin(option, default)
+		if not sorting_section:
+			log("Failed to initialize section `sorting' of configuration file.")
+			weechat.config_free(config_file)
 
-	# Write default rules file.
-	rules_file = resolve_path(get_config_string('rules_file'))
-	if not os.path.exists(rules_file): write_default_rules(rules_file)
+		else:
+			options['case_sensitive'] = weechat.config_new_option(config_file, sorting_section,
+				'case_sensitive', 'boolean',
+				'If this option is on, sorting is case sensitive.',
+				'', 0, 0, 'off', 'off', 0,
+				'', '', '', '', '', ''
+			)
+
+			options['group_irc'] = weechat.config_new_option(config_file, sorting_section,
+				'group_irc', 'boolean',
+				'If this option is on, the script pretends that IRC channel/private buffers are renamed to "irc.server.{network}.{channel}" rather than "irc.{network}.{channel}".' +
+				'This ensures that thsee buffers are grouped with their respective server buffer.',
+				'', 0, 0, 'on', 'on', 0,
+				'', '', '', '', '', ''
+			)
+
+			options['rules'] = weechat.config_new_option(config_file, sorting_section,
+				'rules', 'string',
+				'An ordered list of sorting rules encoded as JSON. See /help autosort for commands to manipulate these rules.',
+				'', 0, 0, default_rules, default_rules, 0,
+				'', '', '', '', '', ''
+			)
+
+		if weechat.config_read(config_file) != weechat.WEECHAT_RC_OK:
+			log('Failed to load configuration file.')
+
+		if weechat.config_write(config_file) != weechat.WEECHAT_RC_OK:
+			log('Failed to write configuration file.')
 
 
-def load_configuration():
+def load_config():
 	''' Load configuration variables. '''
 	global rules
 	global group_irc
 	global case_sensitive
 	global highest
 
-	init_configuration()
+	case_sensitive = weechat.config_boolean(options['case_sensitive'])
+	group_irc      = weechat.config_boolean(options['group_irc'])
+	rules_blob     = weechat.config_string(options['rules'])
 
-	group_irc      = get_config_bool('group_irc')
-	rules_file     = get_config_string('rules_file')
-	case_sensitive = get_config_bool('case_sensitive')
-	rules, highest = read_order_rules(rules_file)
+	rules, highest = parse_rules(rules_blob)
+
+def save_rules(run_callback = True):
+	''' Save the current rules to the configuration. '''
+	weechat.config_option_set(options['rules'], encode_rules(rules), run_callback)
 
 
 def call_command(data, buffer, old_command, args, subcommands):
@@ -235,33 +247,164 @@ def call_command(data, buffer, old_command, args, subcommands):
 	return weechat.WEECHAT_RC_ERROR
 
 
+def split_args(args, expected):
+	''' Split an argument string in the desired number of arguments. '''
+	split = args.split(' ', expected - 1)
+	if (len(split) != expected):
+		raise ValueError('Expected exactly ' + expected + ' arguments, got ' + str(len(split)) + '.')
+	return split
+
+
+def parse_rule_arg(arg):
+	''' Parse a rule argument. '''
+	stripped = arg.strip();
+	match = parse_rule_arg.regex.match(stripped)
+	if not match:
+		raise ValueError('Invalid rule: expected "regex = score", got "' + stripped + '".')
+
+	regex = '^' + match.group(1).strip() + '$'
+	score = match.group(2).strip()
+
+	try:
+		score = int(score)
+	except Exception:
+		raise ValueError('Invalid score: expected integer, got "' + score + '".')
+
+	try:
+		regex = re.compile(regex)
+	except Exception as e:
+		raise ValueError('Invalid regex: ' + str(e) + ' in "' + regex + '".')
+
+	return (regex, score)
+
+parse_rule_arg.regex = re.compile(r'^(.*)=\s*([+-]?\d+)$')
+
+def parse_index_arg(arg):
+	''' Parse an index argument. '''
+	stripped = arg.strip()
+	try:
+		return int(stripped)
+	except ValueError:
+		raise ValueError('Invalid index: expected integer, got "' + stripped + '".')
+
+
 def command_rule_list(data, buffer, command, args):
+	''' Show the list of sorting rules. '''
+	global rules
+
+	output = 'Sorting rules:\n'
+	for i, rule in enumerate(rules):
+		output += '    ' + str(i) + ": " + str(rule[0].pattern[1:-1]) + ' = ' + str(rule[1]) + '\n'
+	log(output, buffer)
+
 	return weechat.WEECHAT_RC_OK
 
 
 def command_rule_add(data, buffer, command, args):
+	''' Add a rule to the rule list. '''
+	global rules
+	rule = parse_rule_arg(args)
+
+	rules.append(rule)
+	save_rules()
+	command_rule_list('', buffer, command, '')
+
 	return weechat.WEECHAT_RC_OK
 
 
-def command_rule_del(data, buffer, command, args):
+def command_rule_insert(data, buffer, command, args):
+	''' Insert a rule at the desired position in the rule list. '''
+	global rules
+	index, rule = split_args(args, 2)
+	index = parse_index_arg(index)
+	rule  = parse_rule_arg(rule)
+
+	rules.insert(index, rule)
+	save_rules()
+	command_rule_list('', buffer, command, '')
+	return weechat.WEECHAT_RC_OK
+
+
+def command_rule_update(data, buffer, command, args):
+	''' Update a rule in the rule list. '''
+	global rules
+	index, rule = split_args(args, 2)
+	index = parse_index_arg(index)
+	rule  = parse_rule_arg(rule)
+
+	if not 0 <= index < len(rules):
+		raise ValueError('Index out of range: expected between 0 and {}, got {}.'.format(len(rules), index))
+
+	rules[index] = rule
+	save_rules()
+	command_rule_list('', buffer, command, '')
+	return weechat.WEECHAT_RC_OK
+
+
+
+def command_rule_delete(data, buffer, command, args):
+	''' Delete a rule from the rule list. '''
+	global rules
+	index = args.strip()
+	index = parse_index_arg(index)
+
+	if not 0 <= index < len(rules):
+		raise ValueError('Index out of range: expected between 0 and {}, got {}.'.format(len(rules), index))
+
+	rules.pop(index)
+	save_rules()
+	command_rule_list('', buffer, command, '')
 	return weechat.WEECHAT_RC_OK
 
 
 def command_rule_move(data, buffer, command, args):
+	''' Move a rule to a new position. '''
+	global rules
+	index_a, index_b = split_args(args, 2)
+	index_a = parse_index_arg(index_a)
+	index_b = parse_index_arg(index_b)
+	rule = rules[index_a]
+
+	if not 0 <= index_a < len(rules):
+		raise ValueError('Index out of range: expected between 0 and {}, got {}.'.format(len(rules), index_a))
+
+	if not 0 <= index_b < len(rules):
+		raise ValueError('Index out of range: expected between 0 and {}, got {}.'.format(len(rules), index_b))
+
+	rules.insert(index_b, rules.pop(index_a))
+	save_rules()
+	command_rule_list('', buffer, command, '')
 	return weechat.WEECHAT_RC_OK
 
 
 def command_rule_swap(data, buffer, command, args):
+	''' Swap two rules. '''
+	global rules
+	index_a, index_b = split_args(args, 2)
+	index_a = parse_index_arg(index_a)
+	index_b = parse_index_arg(index_b)
+
+	if not 0 <= index_a < len(rules):
+		raise ValueError('Index out of range: expected between 0 and {}, got {}.'.format(len(rules), index_a))
+
+	if not 0 <= index_b < len(rules):
+		raise ValueError('Index out of range: expected between 0 and {}, got {}.'.format(len(rules), index_b))
+
+	rules[index_a], rules[index_b] = rules[index_b], rules[index_a]
+	save_rules()
+	command_rule_list('', buffer, command, '')
 	return weechat.WEECHAT_RC_OK
 
 
 commands = {
 	'rule': {
-		'list': command_rule_list,
-		'add':  command_rule_add,
-		'del':  command_rule_del,
-		'move': command_rule_move,
-		'swap': command_rule_swap,
+		'list':   command_rule_list,
+		'add':    command_rule_add,
+		'insert': command_rule_insert,
+		'update': command_rule_update,
+		'delete': command_rule_delete,
+		'move':   command_rule_move,
+		'swap':   command_rule_swap,
 	}
 }
 
@@ -269,31 +412,32 @@ commands = {
 def on_buffers_changed(*args, **kwargs):
 	''' Called whenever the buffer list changes. '''
 	apply_buffer_order(sort_buffers(get_buffers(), rules))
+	return weechat.WEECHAT_RC_OK
 
 
 def on_config_changed(*args, **kwargs):
 	''' Called whenever the configuration changes. '''
-	try:
-		load_configuration()
-	except Exception as e:
-		log(e)
-		return weechat.WEECHAT_RC_ERROR
-
+	load_config()
 	on_buffers_changed()
 	return weechat.WEECHAT_RC_OK
 
 
 def on_autosort_command(data, buffer, args):
 	''' Called when the autosort command is invoked. '''
-	return call_command(data, buffer, ['/autosort'], args, commands)
-
+	try:
+		return call_command(data, buffer, ['/autosort'], args, commands)
+	except ValueError as e:
+		log(e, buffer)
+		return weechat.WEECHAT_RC_ERROR
 
 
 if weechat.register(SCRIPT_NAME, SCRIPT_AUTHOR, SCRIPT_VERSION, SCRIPT_LICENSE, SCRIPT_DESC, "", ""):
+	init_config()
+
 	weechat.hook_signal('buffer_opened',   'on_buffers_changed', '')
 	weechat.hook_signal('buffer_merged',   'on_buffers_changed', '')
 	weechat.hook_signal('buffer_unmerged', 'on_buffers_changed', '')
 	weechat.hook_signal('buffer_renamed',  'on_buffers_changed', '')
-	weechat.hook_config(CONFIG_PREFIX + '.*', 'on_config_changed', '')
+	weechat.hook_config('autosort.*',      'on_config_changed',  '')
 	weechat.hook_command('autosort', '', '', '', '', 'on_autosort_command', 'NULL')
 	on_config_changed()
