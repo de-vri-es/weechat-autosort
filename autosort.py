@@ -49,9 +49,9 @@ class Pattern:
 				regex += re.escape([c])
 			elif c == '\\':
 				escaped = True
-			elif c == '*':
+			elif c == '*' and not char_class:
 				regex += '[^.]*'
-			elif c == '?':
+			elif c == '?' and not char_class:
 				regex += '[^.]'
 			elif c == '[' and not char_class:
 				char_class = 1
