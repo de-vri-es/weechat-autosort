@@ -497,6 +497,82 @@ def on_autosort_command(data, buffer, args):
 		return weechat.WEECHAT_RC_ERROR
 
 
+command_description = '''\
+/autosort rule list
+Print the list of sort rules.
+
+/autosort rule add <pattern> = <score>
+Add a new rule at the end of the rule list.
+
+/autosort rule insert <index> <pattern> = <score>
+Insert a new rule at the given index in the rule list.
+
+/autosort rule update <index> <pattern> = <score>
+Update a rule in the list with a new pattern and score.
+
+/autosort rule delete <index>
+Delete a rule from the list.
+
+/autosort rule move <index_from> <index_to>
+Move a rule from one position in the list to another.
+
+/autosort rule swap <index_a> <index_b>
+Swap two rules in the list
+
+
+Use the /autosort command to show and manipulate the autosort rules.
+Autosort first turns buffer names into a list of their components by splitting on them on the period (.) character.
+The buffers are then lexicographically sorted.
+
+To facilitate custom sort orders, it is possible to assign a sort score to each component individually before the sorting is done.
+Any name component that did not get a score assigned will be sorted after those that did receive a score.
+Components are always sorted on their score first and then on their second.
+Lower scores are sorted first.
+
+Scores are assigned by defining sorting rules.
+The first rule that matches a component decides the score.
+Further rules are not examined.
+Sort rules use the following syntax:
+<glob-pattern> = <score>
+
+Allowed special characters in the glob patterns are:
+*        Match any sequence of characters except for periods.
+?        Match a single character, but not a period.
+[a-z]    Match a single character in the given regex-like character class.
+[^ab]    Match a single character that is not in the given regex-like character class.
+
+
+As an example, consider the following rule list:
+0: core       = 0
+1: irc        = 2
+2: *          = 1
+3: irc.server = 0
+
+4: irc.server.*.#* = 1
+5: irc.server.*.*  = 0
+
+Rule 0 ensures the core buffer is always sorted first.
+Rule 1 sorts IRC buffers last and rule 2 sorts all remaining buffers between the core and IRC buffers.
+Rule 3 sorts IRC server buffers before any other type of IRC buffer.
+Note that rule 3 assigns a score of 0 again.
+This is perfectly fine and it does not conflict with rule 0,
+because rule 0 only matches the first component of a buffer name
+while rule 3 only matches the second component of a buffer name.
+
+Rule 4 and 5 would make no sense with the group_irc option off.
+Normally IRC channel or private buffers are called "irc.<network>.<#channel>" and their server buffers are called "irc.server.<network>".
+With the option on though, autosort pretends that channel buffers are actually called "irc.server.<network>.<#channel>".
+This way the channel and private buffers for a particular network are always grouped with their server buffer,
+and the server buffer comes first because it has less components in its name.
+
+So, what do rules 4 and 5 do, then?
+Very simple, they sort private buffers (and channels not starting with a '#') before channel buffers.
+Rule 4 matches channel buffers while rule 5 matches everything that remains and assigns it a lower score.
+'''
+
+command_completion = 'rule list|add|insert|update|delete|move|swap'
+
+
 if weechat.register(SCRIPT_NAME, SCRIPT_AUTHOR, SCRIPT_VERSION, SCRIPT_LICENSE, SCRIPT_DESC, "", ""):
 	config = Config('autosort')
 
@@ -505,5 +581,5 @@ if weechat.register(SCRIPT_NAME, SCRIPT_AUTHOR, SCRIPT_VERSION, SCRIPT_LICENSE, 
 	weechat.hook_signal('buffer_unmerged', 'on_buffers_changed', '')
 	weechat.hook_signal('buffer_renamed',  'on_buffers_changed', '')
 	weechat.hook_config('autosort.*',      'on_config_changed',  '')
-	weechat.hook_command('autosort', '', '', '', '', 'on_autosort_command', 'NULL')
+	weechat.hook_command('autosort', command_description, '', '', command_completion, 'on_autosort_command', 'NULL')
 	on_config_changed()
