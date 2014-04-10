@@ -184,8 +184,8 @@ class Config:
 		('irc',  2),
 		('*',    1),
 
-		('irc.server',  1),
 		('irc.irc_raw', 0),
+		('irc.server',  1),
 	])
 
 	def __init__(self, filename):
