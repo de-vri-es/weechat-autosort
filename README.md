@@ -53,24 +53,22 @@ As an example, consider the following rule list:
 0: core            = 0
 1: irc             = 2
 2: *               = 1
-3: irc.server      = 0
 
-4: irc.server.*.#* = 1
-5: irc.server.*.*  = 0
+3: irc.server.*.#* = 1
+4: irc.server.*.*  = 0
 ```
 
 Rule 0 ensures the core buffer is always sorted first.
-Rule 1 sorts IRC buffers last and rule 2 sorts all remaining buffers between the core and IRC buffers.
-Rule 3 sorts IRC server buffers before any other type of IRC buffer.
-Note that rule 3 assigns a score of 0 again.
-This is perfectly fine and it does not conflict with rule 0,
-because rule 0 only matches the first component of a buffer name
-while rule 3 only matches the second component of a buffer name.
+Rule 1 sorts IRC buffers last and rule 2 puts all remaining buffers in between the two.
 
-Rule 4 and 5 would make no sense with the group_irc option off.
+Rule 3 and 4 would make no sense with the group_irc option off.
 With the option on though, these rules will sort private buffers before regular channel buffers.
-Rule 4 matches channel buffers and assigns them a higher score,
-while rule 5 matches the buffers that remain and assigns them a lower score.
+Rule 3 matches channel buffers and assigns them a higher score,
+while rule 4 matches the buffers that remain and assigns them a lower score.
+The same effect could also be achieved with a single rule:
+```
+irc.server.*.[^#]* = 0
+```
 
 ## Commands
 ```

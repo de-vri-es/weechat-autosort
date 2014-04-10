@@ -515,54 +515,70 @@ Move a rule from one position in the list to another.
 Swap two rules in the list
 
 
-Use the /autosort command to show and manipulate the autosort rules.
-Autosort first turns buffer names into a list of their components by splitting on them on the period (.) character.
-The buffers are then lexicographically sorted.
+# Introduction
+Autosort is a weechat script to automatically keep your buffers sorted.
+The sort order can be customized by defining your own sort rules,
+but the default should be sane enough for most people.
+It can also group IRC channel/private buffers under their server buffer if you like.
 
-To facilitate custom sort orders, it is possible to assign a sort score to each component individually before the sorting is done.
+Autosort first turns buffer names into a list of their components by splitting on them on the period character.
+For example, the buffer name "irc.server.freenode" is turned into ['irc', 'server', 'freenode'].
+The list of buffers is then lexicographically sorted.
+
+To facilitate custom sort orders, it is possible to assign a score to each component individually before the sorting is done.
 Any name component that did not get a score assigned will be sorted after those that did receive a score.
-Components are always sorted on their score first and then on their second.
+Components are always sorted on their score first and on their name second.
 Lower scores are sorted first.
 
-Scores are assigned by defining sorting rules.
+## Sort rules
+You can assign scores to name components by defining sort rules.
 The first rule that matches a component decides the score.
 Further rules are not examined.
 Sort rules use the following syntax:
 <glob-pattern> = <score>
 
+You can use the "/autosort rule" command to show and manipulate the list of sort rules.
+
+
 Allowed special characters in the glob patterns are:
-*        Match any sequence of characters except for periods.
-?        Match a single character, but not a period.
-[a-z]    Match a single character in the given regex-like character class.
-[^ab]    Match a single character that is not in the given regex-like character class.
+
+Pattern | Meaning
+--------|--------
+*       | Matches a sequence of any characters except for periods.
+?       | Matches a single character, but not a period.
+[a-z]   | Matches a single character in the given regex-like character class.
+[^ab]   | A negated regex-like character class.
+\\*      | A backslash escapes the next characters and removes its special meaning.
+\\\\      | A literal backslash.
 
 
+## Grouping IRC buffers
+In weechat, IRC channel/private buffers are named "irc.<network>.<#channel>",
+and IRC server buffers are named "irc.server.<network>".
+This does not work very well with lexicographical sorting if you want all buffers for one network grouped together.
+That is why autosort comes with the "autosort.sorting.group_irc" option,
+which secretly pretends IRC channel/private buffers are called "irc.server.<network>.<#channel>".
+The buffers are not actually renamed, autosort simply pretends they are for sorting purposes.
+
+
+## Example
 As an example, consider the following rule list:
-0: core       = 0
-1: irc        = 2
-2: *          = 1
-3: irc.server = 0
+0: core            = 0
+1: irc             = 2
+2: *               = 1
 
-4: irc.server.*.#* = 1
-5: irc.server.*.*  = 0
+3: irc.server.*.#* = 1
+4: irc.server.*.*  = 0
 
 Rule 0 ensures the core buffer is always sorted first.
-Rule 1 sorts IRC buffers last and rule 2 sorts all remaining buffers between the core and IRC buffers.
-Rule 3 sorts IRC server buffers before any other type of IRC buffer.
-Note that rule 3 assigns a score of 0 again.
-This is perfectly fine and it does not conflict with rule 0,
-because rule 0 only matches the first component of a buffer name
-while rule 3 only matches the second component of a buffer name.
+Rule 1 sorts IRC buffers last and rule 2 puts all remaining buffers in between the two.
 
-Rule 4 and 5 would make no sense with the group_irc option off.
-Normally IRC channel or private buffers are called "irc.<network>.<#channel>" and their server buffers are called "irc.server.<network>".
-With the option on though, autosort pretends that channel buffers are actually called "irc.server.<network>.<#channel>".
-This way the channel and private buffers for a particular network are always grouped with their server buffer,
-and the server buffer comes first because it has less components in its name.
-
-So, what do rules 4 and 5 do, then?
-Very simple, they sort private buffers (and channels not starting with a '#') before channel buffers.
-Rule 4 matches channel buffers while rule 5 matches everything that remains and assigns it a lower score.
+Rule 3 and 4 would make no sense with the group_irc option off.
+With the option on though, these rules will sort private buffers before regular channel buffers.
+Rule 3 matches channel buffers and assigns them a higher score,
+while rule 4 matches the buffers that remain and assigns them a lower score.
+The same effect could also be achieved with a single rule:
+irc.server.*.[^#]* = 0
 '''
 
 command_completion = 'list|add|insert|update|delete|move|swap'
