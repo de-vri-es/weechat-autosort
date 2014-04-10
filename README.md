@@ -43,7 +43,7 @@ In weechat, IRC channel/private buffers are named `irc.<network>.<#channel>`,
 and IRC server buffers are named `irc.server.<network>`.
 This does not work very well with lexicographical sorting if you want all buffers for one network grouped together.
 That is why autosort comes with the `autosort.sorting.group_irc` option,
-which seceretly pretends IRC channel/private buffers are called `irc.server.<network>.<#channel>`.
+which secretly pretends IRC channel/private buffers are called `irc.server.<network>.<#channel>`.
 The buffers are not actually renamed, autosort simply pretends they are for sorting purposes.
 
 
