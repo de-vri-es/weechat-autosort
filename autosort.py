@@ -445,19 +445,6 @@ def command_rule_swap(buffer, command, args):
 	return weechat.WEECHAT_RC_OK
 
 
-commands = {
-	'rule': {
-		'list':   command_rule_list,
-		'add':    command_rule_add,
-		'insert': command_rule_insert,
-		'update': command_rule_update,
-		'delete': command_rule_delete,
-		'move':   command_rule_move,
-		'swap':   command_rule_swap,
-	}
-}
-
-
 def call_command(buffer, command, args, subcommands):
 	''' Call a subccommand from a dictionary. '''
 	subcommand, tail = pad(args.split(' ', 1), 2, '')
@@ -491,32 +478,40 @@ def on_config_changed(*args, **kwargs):
 def on_autosort_command(data, buffer, args):
 	''' Called when the autosort command is invoked. '''
 	try:
-		return call_command(buffer, ['/autosort'], args, commands)
+		return call_command(buffer, ['/autosort'], args, {
+			'list':   command_rule_list,
+			'add':    command_rule_add,
+			'insert': command_rule_insert,
+			'update': command_rule_update,
+			'delete': command_rule_delete,
+			'move':   command_rule_move,
+			'swap':   command_rule_swap,
+		})
 	except ValueError as e:
 		log(e, buffer)
 		return weechat.WEECHAT_RC_ERROR
 
 
 command_description = '''\
-/autosort rule list
+/autosort list
 Print the list of sort rules.
 
-/autosort rule add <pattern> = <score>
+/autosort add <pattern> = <score>
 Add a new rule at the end of the rule list.
 
-/autosort rule insert <index> <pattern> = <score>
+/autosort insert <index> <pattern> = <score>
 Insert a new rule at the given index in the rule list.
 
-/autosort rule update <index> <pattern> = <score>
+/autosort update <index> <pattern> = <score>
 Update a rule in the list with a new pattern and score.
 
-/autosort rule delete <index>
+/autosort delete <index>
 Delete a rule from the list.
 
-/autosort rule move <index_from> <index_to>
+/autosort move <index_from> <index_to>
 Move a rule from one position in the list to another.
 
-/autosort rule swap <index_a> <index_b>
+/autosort swap <index_a> <index_b>
 Swap two rules in the list
 
 
@@ -570,7 +565,7 @@ Very simple, they sort private buffers (and channels not starting with a '#') be
 Rule 4 matches channel buffers while rule 5 matches everything that remains and assigns it a lower score.
 '''
 
-command_completion = 'rule list|add|insert|update|delete|move|swap'
+command_completion = 'list|add|insert|update|delete|move|swap'
 
 
 if weechat.register(SCRIPT_NAME, SCRIPT_AUTHOR, SCRIPT_VERSION, SCRIPT_LICENSE, SCRIPT_DESC, "", ""):

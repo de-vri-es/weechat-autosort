@@ -74,36 +74,36 @@ while rule 5 matches the buffers that remain and assigns them a lower score.
 
 ## Commands
 ```
-/autosort rule list
+/autosort list
 ```
 Print the list of sort rules.
 
 ```
-/autosort rule add <pattern> = <score>
+/autosort add <pattern> = <score>
 ```
 Add a new rule at the end of the rule list.
 
 ```
-/autosort rule insert <index> <pattern> = <score>
+/autosort insert <index> <pattern> = <score>
 ```
 Insert a new rule at the given index in the rule list.
 
 ```
-/autosort rule update <index> <pattern> = <score>
+/autosort update <index> <pattern> = <score>
 ```
 Update a rule in the list with a new pattern and score.
 
 ```
-/autosort rule delete <index>
+/autosort delete <index>
 ```
 Delete a rule from the list.
 
 ```
-/autosort rule move <index_from> <index_to>
+/autosort move <index_from> <index_to>
 ```
 Move a rule from one position in the list to another.
 
 ```
-/autosort rule swap <index_a> <index_b>
+/autosort swap <index_a> <index_b>
 ```
 Swap two rules in the list
