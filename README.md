@@ -33,7 +33,7 @@ Pattern | Meaning
 *       | Matches a sequence of any characters except for periods.
 ?       | Matches a single character, but not a period.
 [a-z]   | Matches a single character in the given regex-like character class.
-[^ab]   | Matches a single character that is not in the given regex-like character class.
+[^ab]   | A negated regex-like character class.
 \\*     | A backslash escapes the next characters and removes its special meaning.
 \\\\    | A literal backslash.
 
