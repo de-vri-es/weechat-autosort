@@ -342,12 +342,12 @@ def parse_rule_arg(arg):
 
 	try:
 		score = int(score)
-	except Exception:
+	except ValueError:
 		raise ValueError('Invalid score: expected integer, got "' + score + '".')
 
 	try:
 		pattern = Pattern(pattern)
-	except Exception as e:
+	except ValueError as e:
 		raise ValueError('Invalid pattern: ' + str(e) + ' in "' + pattern + '".')
 
 	return (pattern, score)
