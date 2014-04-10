@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright (C) 2013-2013 Maarten de Vries <maarten@de-vri.es>
+# Copyright (C) 2013-2014 Maarten de Vries <maarten@de-vri.es>
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -25,7 +25,7 @@ SCRIPT_NAME     = "autosort"
 SCRIPT_AUTHOR   = "Maarten de Vries <maarten@de-vri.es>"
 SCRIPT_VERSION  = "1.1"
 SCRIPT_LICENSE  = "GPLv3"
-SCRIPT_DESC     = "Automatically keeps buffers sorted just the way you want to."
+SCRIPT_DESC     = "Automatically keep your buffers sorted."
 
 
 config = None
@@ -492,7 +492,7 @@ def on_autosort_command(data, buffer, args):
 		return weechat.WEECHAT_RC_ERROR
 
 
-command_description = '''\
+command_description = r'''
 /autosort list
 Print the list of sort rules.
 
@@ -548,8 +548,8 @@ Pattern | Meaning
 ?       | Matches a single character, but not a period.
 [a-z]   | Matches a single character in the given regex-like character class.
 [^ab]   | A negated regex-like character class.
-\\*      | A backslash escapes the next characters and removes its special meaning.
-\\\\      | A literal backslash.
+\*      | A backslash escapes the next characters and removes its special meaning.
+\\      | A literal backslash.
 
 
 ## Grouping IRC buffers
