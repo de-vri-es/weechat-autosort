@@ -43,10 +43,10 @@ class Pattern:
 		for c in pattern:
 			if escaped and char_class:
 				escaped = False
-				chars += re.escape([c])
+				chars += re.escape(c)
 			elif escaped:
 				escaped = False
-				regex += re.escape([c])
+				regex += re.escape(c)
 			elif c == '\\':
 				escaped = True
 			elif c == '*' and not char_class:
