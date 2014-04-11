@@ -310,7 +310,7 @@ def get_buffers():
 		# Buffer is merged with one we already have in the list, skip it.
 		if number <= len(buffers):
 			continue
-		buffers.append(name.split('.'))
+		buffers.append(name)
 
 	weechat.infolist_free(buffer_list)
 	return buffers
@@ -321,14 +321,14 @@ def preprocess(buffer, config):
 	Preprocess a buffers name components.
 	This function modifies IRC buffers to group them under their server buffer if group_irc is set.
 	'''
-	result = list(buffer)
-	if config.group_irc and len(result) >= 2 and buffer[0] == 'irc' and buffer[1] not in ('server', 'irc_raw'):
-		result.insert(1, 'server')
+	buffer = buffer.split('.')
+	if config.group_irc and len(buffer) >= 2 and buffer[0] == 'irc' and buffer[1] not in ('server', 'irc_raw'):
+		buffer.insert(1, 'server')
 
 	if not config.case_sensitive:
-		result = map(lambda x: x.lower(), result)
+		buffer = map(lambda x: x.lower(), buffer)
 
-	return result;
+	return buffer;
 
 
 def buffer_sort_key(rules):
@@ -346,10 +346,8 @@ def buffer_sort_key(rules):
 
 def apply_buffer_order(buffers):
 	''' Sort the buffers in weechat according to the order in the input list.  '''
-	i = 1
-	for buffer in buffers:
-		weechat.command('', '/buffer swap {} {}'.format('.'.join(buffer), i))
-		i += 1
+	for i, buffer in enumerate(buffers):
+		weechat.command('', '/buffer swap {} {}'.format(buffer, i + 1))
 
 
 def split_args(args, expected):
