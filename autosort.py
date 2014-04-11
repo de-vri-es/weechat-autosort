@@ -21,11 +21,11 @@ import os.path
 import re
 import json
 
-SCRIPT_NAME     = "autosort"
-SCRIPT_AUTHOR   = "Maarten de Vries <maarten@de-vri.es>"
-SCRIPT_VERSION  = "1.1"
-SCRIPT_LICENSE  = "GPLv3"
-SCRIPT_DESC     = "Automatically keep your buffers sorted."
+SCRIPT_NAME     = 'autosort'
+SCRIPT_AUTHOR   = 'Maarten de Vries <maarten@de-vri.es>'
+SCRIPT_VERSION  = '1.1'
+SCRIPT_LICENSE  = 'GPLv3'
+SCRIPT_DESC     = 'Automatically keep your buffers sorted.'
 
 
 config = None
@@ -271,7 +271,7 @@ def get_buffers():
 	''' Get a list of all the buffers in weechat. '''
 	buffers = []
 
-	buffer_list = weechat.infolist_get("buffer", "", "")
+	buffer_list = weechat.infolist_get('buffer', '', '')
 
 	while weechat.infolist_next(buffer_list):
 		name   = weechat.infolist_string (buffer_list, 'full_name')
@@ -305,9 +305,9 @@ def buffer_sort_key(rules):
 	''' Create a sort key function for a buffer list from a rule list. '''
 	def key(buffer):
 		result  = []
-		name    = ""
+		name    = ''
 		for word in preprocess(buffer, config):
-			name += ("." if name else "") + word
+			name += ('.' if name else '') + word
 			result.append((rules.get_score(name, rules), word))
 		return result
 
