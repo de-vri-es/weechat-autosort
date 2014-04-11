@@ -118,13 +118,13 @@ class RuleList:
 
 	def insert(self, index, rule):
 		''' Add a rule to the list. '''
-		if not 0 <= index <= len(self): raise ValueError('Index out of range: expected between 0 and {}, got {}.'.format(len(self), index))
+		if not 0 <= index <= len(self): raise ValueError('Index out of range: expected an integer in the range [0, {}], got {}.'.format(len(self), index))
 		self.__rules.insert(index, rule)
 		self.__highest = max(self.__highest, rule[1] + 1)
 
 	def pop(self, index):
 		''' Remove a rule from the list and return it. '''
-		if not 0 <= index < len(self): raise ValueError('Index out of range: expected between 0 and {}, got {}.'.format(len(self), index))
+		if not 0 <= index < len(self): raise ValueError('Index out of range: expected an integer in the range [0, {}), got {}.'.format(len(self), index))
 		return self.__rules.pop(index)
 
 	def move(self, index_a, index_b):
@@ -139,11 +139,11 @@ class RuleList:
 		return len(self.__rules)
 
 	def __getitem__(self, index):
-		if not 0 <= index < len(self): raise ValueError('Index out of range: expected between 0 and {}, got {}.'.format(len(self), index))
+		if not 0 <= index < len(self): raise ValueError('Index out of range: expected an integer in the range [0, {}), got {}.'.format(len(self), index))
 		return self.__rules[index]
 
 	def __setitem__(self, index, rule):
-		if not 0 <= index < len(self): raise ValueError('Index out of range: expected between 0 and {}, got {}.'.format(len(self), index))
+		if not 0 <= index < len(self): raise ValueError('Index out of range: expected an integer in the range [0, {}), got {}.'.format(len(self), index))
 		self.__highest      = max(self.__highest, rule[1] + 1)
 		self.__rules[index] = rule
 
