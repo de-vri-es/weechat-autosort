@@ -31,6 +31,15 @@ SCRIPT_DESC     = 'Automatically keep your buffers sorted.'
 config = None
 
 
+def parse_int(arg, arg_name = 'argument'):
+	''' Parse an integer and provide a more human readable error. '''
+	arg = arg.strip()
+	try:
+		return int(arg)
+	except ValueError:
+		raise ValueError('Invalid {}: expected integer, got "{}".'.format(arg_name, arg))
+
+
 class Pattern:
 	''' A simple glob-like pattern for matching buffer names. '''
 
@@ -83,6 +92,7 @@ class Pattern:
 
 class RuleList:
 	''' A list of rules to test buffer names against. '''
+	rule_regex = re.compile(r'^(.*)=\s*([+-]?[^=]*)$')
 
 	def __init__(self, rules):
 		''' Construct a RuleList from a list of rules. '''
@@ -174,6 +184,23 @@ class RuleList:
 			result.append((pattern, score))
 
 		return RuleList(result)
+
+	@staticmethod
+	def parse_rule(arg):
+		''' Parse a rule argument. '''
+		arg = arg.strip();
+		match = RuleList.rule_regex.match(arg)
+		if not match:
+			raise ValueError('Invalid rule: expected "<pattern> = <score>", got "{}".'.format(arg))
+
+		pattern = match.group(1).strip()
+		try:
+			pattern = Pattern(pattern)
+		except ValueError as e:
+			raise ValueError('Invalid pattern: {} in "{}".'.format(e, pattern))
+
+		score   = parse_int(match.group(2), 'score')
+		return (pattern, score)
 
 
 class Config:
@@ -330,40 +357,6 @@ def split_args(args, expected):
 	return split
 
 
-def parse_rule_arg(arg):
-	''' Parse a rule argument. '''
-	arg = arg.strip();
-	match = parse_rule_arg.regex.match(arg)
-	if not match:
-		raise ValueError('Invalid rule: expected "<pattern> = <score>", got "{}".'.format(arg))
-
-	pattern = match.group(1).strip()
-	score   = match.group(2).strip()
-
-	try:
-		score = int(score)
-	except ValueError:
-		raise ValueError('Invalid score: expected integer, got "{}".'.format(score))
-
-	try:
-		pattern = Pattern(pattern)
-	except ValueError as e:
-		raise ValueError('Invalid pattern: {} in "{}".'.format(e, pattern))
-
-	return (pattern, score)
-
-parse_rule_arg.regex = re.compile(r'^(.*)=\s*([+-]?\d+)$')
-
-
-def parse_index_arg(arg):
-	''' Parse an index argument. '''
-	arg = arg.strip()
-	try:
-		return int(arg)
-	except ValueError:
-		raise ValueError('Invalid index: expected integer, got "{}".'.format(arg))
-
-
 def command_rule_list(buffer, command, args):
 	''' Show the list of sorting rules. '''
 	output = 'Sorting rules:\n'
@@ -376,7 +369,7 @@ def command_rule_list(buffer, command, args):
 
 def command_rule_add(buffer, command, args):
 	''' Add a rule to the rule list. '''
-	rule = parse_rule_arg(args)
+	rule = RuleList.parse_rule(args)
 
 	config.rules.append(rule)
 	config.save_rules()
@@ -388,8 +381,8 @@ def command_rule_add(buffer, command, args):
 def command_rule_insert(buffer, command, args):
 	''' Insert a rule at the desired position in the rule list. '''
 	index, rule = split_args(args, 2)
-	index = parse_index_arg(index)
-	rule  = parse_rule_arg(rule)
+	index = parse_int(index, 'index')
+	rule  = RuleList.parse_rule(rule)
 
 	config.rules.insert(index, rule)
 	config.save_rules()
@@ -400,8 +393,8 @@ def command_rule_insert(buffer, command, args):
 def command_rule_update(buffer, command, args):
 	''' Update a rule in the rule list. '''
 	index, rule = split_args(args, 2)
-	index = parse_index_arg(index)
-	rule  = parse_rule_arg(rule)
+	index = parse_int(index, 'index')
+	rule  = RuleList.parse_rule(rule)
 
 	config.rules[index] = rule
 	config.save_rules()
@@ -413,7 +406,7 @@ def command_rule_update(buffer, command, args):
 def command_rule_delete(buffer, command, args):
 	''' Delete a rule from the rule list. '''
 	index = args.strip()
-	index = parse_index_arg(index)
+	index = parse_int(index, 'index')
 
 	config.rules.pop(index)
 	config.save_rules()
@@ -424,8 +417,8 @@ def command_rule_delete(buffer, command, args):
 def command_rule_move(buffer, command, args):
 	''' Move a rule to a new position. '''
 	index_a, index_b = split_args(args, 2)
-	index_a = parse_index_arg(index_a)
-	index_b = parse_index_arg(index_b)
+	index_a = parse_int(index_a, 'index')
+	index_b = parse_int(index_b, 'index')
 
 	config.rules.move(index_a, index_b)
 	config.save_rules()
@@ -436,8 +429,8 @@ def command_rule_move(buffer, command, args):
 def command_rule_swap(buffer, command, args):
 	''' Swap two rules. '''
 	index_a, index_b = split_args(args, 2)
-	index_a = parse_index_arg(index_a)
-	index_b = parse_index_arg(index_b)
+	index_a = parse_int(index_a, 'index')
+	index_b = parse_int(index_b, 'index')
 
 	config.rules.swap(index_a, index_b)
 	config.save_rules()
