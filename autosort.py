@@ -148,27 +148,27 @@ class RuleList:
 		try:
 			decoded = json.loads(blob)
 		except ValueError:
-			log("Invalid rules: expected JSON encoded list of pairs, got \"" + blob + "\".")
+			log('Invalid rules: expected JSON encoded list of pairs, got "{}".'.format(blob))
 			return [], 0
 
 		for rule in decoded:
 			# Rules must be a pattern,score pair.
 			if len(rule) != 2:
-				log("Invalid rule: expected [pattern, score], got " + str(rule) + ". Rule ignored.")
+				log('Invalid rule: expected [pattern, score], got "{}". Rule ignored.'.format(rule))
 				continue
 
 			# Rules must have a valid pattern.
 			try:
 				pattern = Pattern(rule[0])
 			except ValueError as e:
-				log("Invalid pattern: " + str(e) + " in \"" + rule[0] + "\". Rule ignored.")
+				log('Invalid pattern: {} in "{}". Rule ignored.'.format(e, rule[0]))
 				continue
 
 			# Rules must have a valid score.
 			try:
 				score = int(rule[1])
 			except ValueError as e:
-				log("Invalid score: expected an integer, got " + str(rule[1]) + ". Rule ignored.")
+				log('Invalid score: expected an integer, got "{}". Rule ignored.'.format(score))
 				continue
 
 			result.append((pattern, score))
@@ -264,7 +264,7 @@ def pad(sequence, length, padding = None):
 
 
 def log(message, buffer = 'NULL'):
-	weechat.prnt(buffer, 'autosort: ' + str(message))
+	weechat.prnt(buffer, 'autosort: {}'.format(message))
 
 
 def get_buffers():
@@ -326,16 +326,16 @@ def split_args(args, expected):
 	''' Split an argument string in the desired number of arguments. '''
 	split = args.split(' ', expected - 1)
 	if (len(split) != expected):
-		raise ValueError('Expected exactly ' + expected + ' arguments, got ' + str(len(split)) + '.')
+		raise ValueError('Expected exactly {} arguments, got {}.'.format(expected, len(split)))
 	return split
 
 
 def parse_rule_arg(arg):
 	''' Parse a rule argument. '''
-	stripped = arg.strip();
-	match = parse_rule_arg.regex.match(stripped)
+	arg = arg.strip();
+	match = parse_rule_arg.regex.match(arg)
 	if not match:
-		raise ValueError('Invalid rule: expected "pattern = score", got "' + stripped + '".')
+		raise ValueError('Invalid rule: expected "<pattern> = <score>", got "{}".'.format(arg))
 
 	pattern = match.group(1).strip()
 	score   = match.group(2).strip()
@@ -343,12 +343,12 @@ def parse_rule_arg(arg):
 	try:
 		score = int(score)
 	except ValueError:
-		raise ValueError('Invalid score: expected integer, got "' + score + '".')
+		raise ValueError('Invalid score: expected integer, got "{}".'.format(score))
 
 	try:
 		pattern = Pattern(pattern)
 	except ValueError as e:
-		raise ValueError('Invalid pattern: ' + str(e) + ' in "' + pattern + '".')
+		raise ValueError('Invalid pattern: {} in "{}".'.format(e, pattern))
 
 	return (pattern, score)
 
@@ -357,11 +357,11 @@ parse_rule_arg.regex = re.compile(r'^(.*)=\s*([+-]?\d+)$')
 
 def parse_index_arg(arg):
 	''' Parse an index argument. '''
-	stripped = arg.strip()
+	arg = arg.strip()
 	try:
-		return int(stripped)
+		return int(arg)
 	except ValueError:
-		raise ValueError('Invalid index: expected integer, got "' + stripped + '".')
+		raise ValueError('Invalid index: expected integer, got "{}".'.format(arg))
 
 
 def command_rule_list(buffer, command, args):
@@ -456,7 +456,7 @@ def call_command(buffer, command, args, subcommands):
 	elif callable(child):
 		return child(buffer, command, tail)
 
-	log(' '.join(command) + ": command not found");
+	log('{}: command not found'.format(' '.join(command)));
 	return weechat.WEECHAT_RC_ERROR
 
 
