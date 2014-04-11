@@ -30,6 +30,9 @@ SCRIPT_DESC     = 'Automatically keep your buffers sorted.'
 
 config = None
 
+class HumanReadableError(Exception):
+	pass
+
 
 def parse_int(arg, arg_name = 'argument'):
 	''' Parse an integer and provide a more human readable error. '''
@@ -37,7 +40,7 @@ def parse_int(arg, arg_name = 'argument'):
 	try:
 		return int(arg)
 	except ValueError:
-		raise ValueError('Invalid {}: expected integer, got "{}".'.format(arg_name, arg))
+		raise HumanReadableError('Invalid {}: expected integer, got "{}".'.format(arg_name, arg))
 
 
 class Pattern:
@@ -118,13 +121,13 @@ class RuleList:
 
 	def insert(self, index, rule):
 		''' Add a rule to the list. '''
-		if not 0 <= index <= len(self): raise ValueError('Index out of range: expected an integer in the range [0, {}], got {}.'.format(len(self), index))
+		if not 0 <= index <= len(self): raise HumanReadableError('Index out of range: expected an integer in the range [0, {}], got {}.'.format(len(self), index))
 		self.__rules.insert(index, rule)
 		self.__highest = max(self.__highest, rule[1] + 1)
 
 	def pop(self, index):
 		''' Remove a rule from the list and return it. '''
-		if not 0 <= index < len(self): raise ValueError('Index out of range: expected an integer in the range [0, {}), got {}.'.format(len(self), index))
+		if not 0 <= index < len(self): raise HumanReadableError('Index out of range: expected an integer in the range [0, {}), got {}.'.format(len(self), index))
 		return self.__rules.pop(index)
 
 	def move(self, index_a, index_b):
@@ -139,11 +142,11 @@ class RuleList:
 		return len(self.__rules)
 
 	def __getitem__(self, index):
-		if not 0 <= index < len(self): raise ValueError('Index out of range: expected an integer in the range [0, {}), got {}.'.format(len(self), index))
+		if not 0 <= index < len(self): raise HumanReadableError('Index out of range: expected an integer in the range [0, {}), got {}.'.format(len(self), index))
 		return self.__rules[index]
 
 	def __setitem__(self, index, rule):
-		if not 0 <= index < len(self): raise ValueError('Index out of range: expected an integer in the range [0, {}), got {}.'.format(len(self), index))
+		if not 0 <= index < len(self): raise HumanReadableError('Index out of range: expected an integer in the range [0, {}), got {}.'.format(len(self), index))
 		self.__highest      = max(self.__highest, rule[1] + 1)
 		self.__rules[index] = rule
 
@@ -191,13 +194,13 @@ class RuleList:
 		arg = arg.strip();
 		match = RuleList.rule_regex.match(arg)
 		if not match:
-			raise ValueError('Invalid rule: expected "<pattern> = <score>", got "{}".'.format(arg))
+			raise HumanReadableError('Invalid rule: expected "<pattern> = <score>", got "{}".'.format(arg))
 
 		pattern = match.group(1).strip()
 		try:
 			pattern = Pattern(pattern)
 		except ValueError as e:
-			raise ValueError('Invalid pattern: {} in "{}".'.format(e, pattern))
+			raise HumanReadableError('Invalid pattern: {} in "{}".'.format(e, pattern))
 
 		score   = parse_int(match.group(2), 'score')
 		return (pattern, score)
@@ -353,7 +356,7 @@ def split_args(args, expected):
 	''' Split an argument string in the desired number of arguments. '''
 	split = args.split(' ', expected - 1)
 	if (len(split) != expected):
-		raise ValueError('Expected exactly {} arguments, got {}.'.format(expected, len(split)))
+		raise HumanReadableError('Expected exactly {} arguments, got {}.'.format(expected, len(split)))
 	return split
 
 
@@ -480,7 +483,7 @@ def on_autosort_command(data, buffer, args):
 			'move':   command_rule_move,
 			'swap':   command_rule_swap,
 		})
-	except ValueError as e:
+	except HumanReadableError as e:
 		log(e, buffer)
 		return weechat.WEECHAT_RC_ERROR
 
