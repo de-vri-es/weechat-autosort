@@ -135,7 +135,7 @@ class RuleList:
 	def __setitem__(self, index, rule):
 		if not 0 <= index < len(self): raise ValueError('Index out of range: expected between 0 and {}, got {}.'.format(len(self), index))
 		self.__highest      = max(self.__highest, rule[1] + 1)
-		self.__rules[index] = value
+		self.__rules[index] = rule
 
 	def __iter__(self):
 		return iter(self.__rules)
