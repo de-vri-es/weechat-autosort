@@ -147,7 +147,7 @@ class RuleList:
 
 		try:
 			decoded = json.loads(blob)
-		except Exception:
+		except ValueError:
 			log("Invalid rules: expected JSON encoded list of pairs, got \"" + blob + "\".")
 			return [], 0
 
@@ -160,14 +160,14 @@ class RuleList:
 			# Rules must have a valid pattern.
 			try:
 				pattern = Pattern(rule[0])
-			except Exception as e:
+			except ValueError as e:
 				log("Invalid pattern: " + str(e) + " in \"" + rule[0] + "\". Rule ignored.")
 				continue
 
 			# Rules must have a valid score.
 			try:
 				score = int(rule[1])
-			except Exception as e:
+			except ValueError as e:
 				log("Invalid score: expected an integer, got " + str(rule[1]) + ". Rule ignored.")
 				continue
 
