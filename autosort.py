@@ -264,7 +264,7 @@ def pad(sequence, length, padding = None):
 
 
 def log(message, buffer = 'NULL'):
-	weechat.prnt(buffer, '[autosort] ' + str(message))
+	weechat.prnt(buffer, 'autosort: ' + str(message))
 
 
 def get_buffers():
