@@ -30,7 +30,7 @@ import json
 
 SCRIPT_NAME     = 'autosort'
 SCRIPT_AUTHOR   = 'Maarten de Vries <maarten@de-vri.es>'
-SCRIPT_VERSION  = '1.1'
+SCRIPT_VERSION  = '2.0'
 SCRIPT_LICENSE  = 'GPLv3'
 SCRIPT_DESC     = 'Automatically keep your buffers sorted and grouped by server.'
 
