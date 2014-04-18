@@ -249,7 +249,7 @@ class Config:
 
 		if not self.sorting_section:
 			log('Failed to initialize section "sorting" of configuration file.')
-			weechat.config_free(config_file)
+			weechat.config_free(self.config_file)
 			return
 
 		self.__case_sensitive = weechat.config_new_option(
