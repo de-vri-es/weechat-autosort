@@ -36,6 +36,7 @@ SCRIPT_DESC     = 'Automatically keep your buffers sorted and grouped by server.
 
 config = None
 
+
 class HumanReadableError(Exception):
 	pass
 
@@ -197,7 +198,7 @@ class RuleList:
 	@staticmethod
 	def parse_rule(arg):
 		''' Parse a rule argument. '''
-		arg = arg.strip();
+		arg = arg.strip()
 		match = RuleList.rule_regex.match(arg)
 		if not match:
 			raise HumanReadableError('Invalid rule: expected "<pattern> = <score>", got "{}".'.format(arg))
@@ -251,14 +252,16 @@ class Config:
 			weechat.config_free(config_file)
 			return
 
-		self.__case_sensitive = weechat.config_new_option(self.config_file, self.sorting_section,
+		self.__case_sensitive = weechat.config_new_option(
+			self.config_file, self.sorting_section,
 			'case_sensitive', 'boolean',
 			'If this option is on, sorting is case sensitive.',
 			'', 0, 0, 'off', 'off', 0,
 			'', '', '', '', '', ''
 		)
 
-		self.__group_irc = weechat.config_new_option(self.config_file, self.sorting_section,
+		self.__group_irc = weechat.config_new_option(
+			self.config_file, self.sorting_section,
 			'group_irc', 'boolean',
 			'If this option is on, the script pretends that IRC channel/private buffers are renamed to "irc.server.{network}.{channel}" rather than "irc.{network}.{channel}".' +
 			'This ensures that thsee buffers are grouped with their respective server buffer.',
@@ -266,7 +269,8 @@ class Config:
 			'', '', '', '', '', ''
 		)
 
-		self.__rules = weechat.config_new_option(self.config_file, self.sorting_section,
+		self.__rules = weechat.config_new_option(
+			self.config_file, self.sorting_section,
 			'rules', 'string',
 			'An ordered list of sorting rules encoded as JSON. See /help autosort for commands to manipulate these rules.',
 			'', 0, 0, Config.default_rules, Config.default_rules, 0,
@@ -334,7 +338,7 @@ def preprocess(buffer, config):
 	if not config.case_sensitive:
 		buffer = map(lambda x: x.lower(), buffer)
 
-	return buffer;
+	return buffer
 
 
 def buffer_sort_key(rules):
@@ -409,7 +413,6 @@ def command_rule_update(buffer, command, args):
 	return weechat.WEECHAT_RC_OK
 
 
-
 def command_rule_delete(buffer, command, args):
 	''' Delete a rule from the rule list. '''
 	index = args.strip()
@@ -456,7 +459,7 @@ def call_command(buffer, command, args, subcommands):
 	elif callable(child):
 		return child(buffer, command, tail)
 
-	log('{}: command not found'.format(' '.join(command)));
+	log('{}: command not found'.format(' '.join(command)))
 	return weechat.WEECHAT_RC_ERROR
 
 
