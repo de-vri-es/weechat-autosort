@@ -447,7 +447,7 @@ def split_args(args, expected, optional = 0):
 def command_sort(buffer, command, args):
 	''' Sort the buffers and print a confirmation. '''
 	on_buffers_changed()
-	log("Sorted buffers.", buffer);
+	log("Finished sorting buffers.", buffer)
 	return weechat.WEECHAT_RC_OK
 
 
@@ -456,6 +456,8 @@ def command_rule_list(buffer, command, args):
 	output = 'Sorting rules:\n'
 	for i, rule in enumerate(config.rules):
 		output += '    {}: {} = {}\n'.format(i, rule[0].pattern, rule[1])
+	if not len(config.rules):
+		output += '    No sorting rules configured.\n'
 	log(output, buffer)
 
 	return weechat.WEECHAT_RC_OK
@@ -536,6 +538,8 @@ def command_replacement_list(buffer, command, args):
 	output = 'Replacement patterns:\n'
 	for i, pattern in enumerate(config.replacements):
 		output += '    {}: {} -> {}\n'.format(i, pattern[0], pattern[1])
+	if not len(config.replacements):
+		output += '    No replacement patterns configured.'
 	log(output, buffer)
 
 	return weechat.WEECHAT_RC_OK
