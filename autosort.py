@@ -110,65 +110,71 @@ class Pattern:
 		return self.regex.match(input)
 
 
-class RuleList:
-	''' A list of rules to test buffer names against. '''
-	rule_regex = re.compile(r'^(.*)=\s*([+-]?[^=]*)$')
+class FriendlyList(object):
+	''' A list with human readable errors. '''
 
-	def __init__(self, rules):
-		''' Construct a RuleList from a list of rules. '''
-		self.__rules   = rules
-		self.__highest = 0
-		for rule in rules:
-			self.__highest = max(self.__highest, rule[1] + 1)
+	def __init__(self):
+		self.__data = []
 
-	def get_score(self, name, rules):
-		''' Get the sort score of a partial name according to a rule list. '''
-		for rule in self.__rules:
-			if rule[0].match(name): return rule[1]
-		return self.__highest
+	def raw(self):
+		return self.__data
 
-	def encode(self):
-		''' Encode the rules for storage. '''
-		return json.dumps(map(lambda x: (x[0].pattern, x[1]), self.__rules))
-
-	def append(self, rule):
+	def append(self, value):
 		''' Add a rule to the list. '''
-		self.__rules.append(rule)
-		self.__highest = max(self.__highest, rule[1] + 1)
+		self.__data.append(value)
 
-	def insert(self, index, rule):
+	def insert(self, index, value):
 		''' Add a rule to the list. '''
 		if not 0 <= index <= len(self): raise HumanReadableError('Index out of range: expected an integer in the range [0, {}], got {}.'.format(len(self), index))
-		self.__rules.insert(index, rule)
-		self.__highest = max(self.__highest, rule[1] + 1)
+		self.__data.insert(index, value)
 
 	def pop(self, index):
 		''' Remove a rule from the list and return it. '''
 		if not 0 <= index < len(self): raise HumanReadableError('Index out of range: expected an integer in the range [0, {}), got {}.'.format(len(self), index))
-		return self.__rules.pop(index)
+		return self.__data.pop(index)
 
 	def move(self, index_a, index_b):
 		''' Move a rule to a new position in the list. '''
 		self.insert(index_b, self.pop(index_a))
 
 	def swap(self, index_a, index_b):
-		''' Swap two rules in the list. '''
+		''' Swap two elements in the list. '''
 		self[index_a], self[index_b] = self[index_b], self[index_a]
 
 	def __len__(self):
-		return len(self.__rules)
+		return len(self.__data)
 
 	def __getitem__(self, index):
 		if not 0 <= index < len(self): raise HumanReadableError('Index out of range: expected an integer in the range [0, {}), got {}.'.format(len(self), index))
-		return self.__rules[index]
+		return self.__data[index]
 
-	def __setitem__(self, index, rule):
+	def __setitem__(self, index, value):
 		if not 0 <= index < len(self): raise HumanReadableError('Index out of range: expected an integer in the range [0, {}), got {}.'.format(len(self), index))
 		self.__highest      = max(self.__highest, rule[1] + 1)
-		self.__rules[index] = rule
+		self.__data[index] = value
 
 	def __iter__(self):
-		return iter(self.__rules)
+		return iter(self.__data)
+
+
+class RuleList(FriendlyList):
+	''' A list of rules to test buffer names against. '''
+	rule_regex = re.compile(r'^(.*)=\s*([+-]?[^=]*)$')
+
+	def __init__(self, rules):
+		''' Construct a RuleList from a list of rules. '''
+		super(RuleList, self).__init__()
+		for rule in rules: self.append(rule)
+
+	def get_score(self, name, rules):
+		''' Get the sort score of a partial name according to a rule list. '''
+		for rule in self:
+			if rule[0].match(name): return rule[1]
+		return max(self, key=lambda x: rule[1])[1] + 1
+
+	def encode(self):
+		''' Encode the rules for storage. '''
+		return json.dumps(map(lambda x: (x[0].pattern, x[1]), self))
 
 	@staticmethod
 	def decode(blob):
