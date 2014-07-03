@@ -30,13 +30,13 @@ import json
 
 SCRIPT_NAME     = 'autosort'
 SCRIPT_AUTHOR   = 'Maarten de Vries <maarten@de-vri.es>'
-SCRIPT_VERSION  = '2.1'
+SCRIPT_VERSION  = '2.2'
 SCRIPT_LICENSE  = 'GPLv3'
-SCRIPT_DESC     = 'Automatically keep your buffers sorted and grouped by server.'
+SCRIPT_DESC     = 'Automatically (or manually) keep your buffers sorted and grouped by server.'
 
 
 config = None
-
+hooks  = []
 
 class HumanReadableError(Exception):
 	pass
@@ -226,6 +226,8 @@ class Config:
 		('irc.server',  1),
 	])
 
+	default_signals      = 'buffer_opened buffer_merged buffer_unmerged buffer_renamed'
+
 	def __init__(self, filename):
 		''' Initialize the configuration. '''
 
@@ -236,11 +238,13 @@ class Config:
 		self.case_sensitive   = False
 		self.group_irc        = True
 		self.rules            = []
+		self.signals          = []
 		self.highest          = 0
 
 		self.__case_sensitive = None
 		self.__group_irc      = None
 		self.__rules          = None
+		self.__signals        = None
 
 		if not self.config_file:
 			log('Failed to initialize configuration file "{}".'.format(self.filename))
@@ -278,6 +282,14 @@ class Config:
 			'', '', '', '', '', ''
 		)
 
+		self.__signals = weechat.config_new_option(
+			self.config_file, self.sorting_section,
+			'signals', 'string',
+			'The signals that will cause autosort to resort your buffer list. Seperate signals with spaces.',
+			'', 0, 0, Config.default_signals, Config.default_signals, 0,
+			'', '', '', '', '', ''
+		)
+
 		if weechat.config_read(self.config_file) != weechat.WEECHAT_RC_OK:
 			log('Failed to load configuration file.')
 
@@ -292,7 +304,10 @@ class Config:
 		self.case_sensitive = weechat.config_boolean(self.__case_sensitive)
 		self.group_irc      = weechat.config_boolean(self.__group_irc)
 		rules_blob          = weechat.config_string(self.__rules)
+		signals_blob        = weechat.config_string(self.__signals)
+
 		self.rules          = RuleList.decode(rules_blob)
+		self.signals        = signals_blob.split()
 
 	def save_rules(self, run_callback = True):
 		''' Save the current rules to the configuration. '''
@@ -475,6 +490,13 @@ def on_buffers_changed(*args, **kwargs):
 def on_config_changed(*args, **kwargs):
 	''' Called whenever the configuration changes. '''
 	config.reload()
+
+	# Unhook all signals and hook the new ones.
+	for hook in hooks:
+		weechat.unhook(hook)
+	for signal in config.signals:
+		hooks.append(weechat.hook_signal(signal, 'on_buffers_changed', ''))
+
 	on_buffers_changed()
 	return weechat.WEECHAT_RC_OK
 
@@ -490,6 +512,7 @@ def on_autosort_command(data, buffer, args):
 			'delete': command_rule_delete,
 			'move':   command_rule_move,
 			'swap':   command_rule_swap,
+			'sort':   on_buffers_changed,
 		})
 	except HumanReadableError as e:
 		log(e, buffer)
@@ -497,6 +520,9 @@ def on_autosort_command(data, buffer, args):
 
 
 command_description = r'''
+/autosort sort
+Manually trigger a resort.
+
 /autosort list
 Print the list of sort rules.
 
@@ -585,16 +611,12 @@ The same effect could also be achieved with a single rule:
 irc.server.*.[^#]* = 0
 '''
 
-command_completion = 'list|add|insert|update|delete|move|swap'
+command_completion = 'sort|list|add|insert|update|delete|move|swap'
 
 
 if weechat.register(SCRIPT_NAME, SCRIPT_AUTHOR, SCRIPT_VERSION, SCRIPT_LICENSE, SCRIPT_DESC, "", ""):
 	config = Config('autosort')
 
-	weechat.hook_signal('buffer_opened',   'on_buffers_changed', '')
-	weechat.hook_signal('buffer_merged',   'on_buffers_changed', '')
-	weechat.hook_signal('buffer_unmerged', 'on_buffers_changed', '')
-	weechat.hook_signal('buffer_renamed',  'on_buffers_changed', '')
 	weechat.hook_config('autosort.*',      'on_config_changed',  '')
 	weechat.hook_command('autosort', command_description, '', '', command_completion, 'on_autosort_command', 'NULL')
 	on_config_changed()
