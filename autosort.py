@@ -22,15 +22,18 @@
 #
 # http://github.com/de-vri.es/weechat-autosort
 #
+
 #
 # Changelog:
 # 2.2:
-#  * Allow configuration of signals that trigger a sort.
-#  * Allow manual sorting with /autosort sort
+#   * Add configuration option for signals that trigger a sort.
+#   * Add command to manually trigger a sort (/autosort sort).
+#   * Add replacement patterns to apply before sorting.
 # 2.1:
-#  * Fix some minor style issues.
+#   * Fix some minor style issues.
 # 2.0:
-#  * Allow for custom sort rules.
+#   * Allow for custom sort rules.
+#
 
 
 import weechat
@@ -229,6 +232,30 @@ class RuleList(FriendlyList):
 		return (pattern, score)
 
 
+def decode_replacements(blob):
+	''' Decode a replacement list encoded as JSON. '''
+	result = FriendlyList()
+	try:
+		decoded = json.loads(blob)
+	except ValueError:
+		log('Invalid replacement list: expected JSON encoded list of pairs, got "{}".'.format(blob))
+		return [], 0
+
+	for replacement in decoded:
+		# Replacements must be a (string, string) pair.
+		if len(replacement) != 2:
+			log('Invalid replacement pattern: expected (pattern, replacement), got "{}". Replacement ignored.'.format(rule))
+			continue
+		result.append(replacement)
+
+	return result
+
+
+def encode_replacements(replacements):
+	''' Encode a list of replacement patterns as JSON. '''
+	return json.dumps(replacements.raw())
+
+
 class Config:
 	''' The autosort configuration. '''
 
@@ -241,6 +268,7 @@ class Config:
 		('irc.server',  1),
 	])
 
+	default_replacements = '[]'
 	default_signals      = 'buffer_opened buffer_merged buffer_unmerged buffer_renamed'
 
 	def __init__(self, filename):
@@ -253,12 +281,14 @@ class Config:
 		self.case_sensitive   = False
 		self.group_irc        = True
 		self.rules            = []
+		self.replacements     = []
 		self.signals          = []
 		self.highest          = 0
 
 		self.__case_sensitive = None
 		self.__group_irc      = None
 		self.__rules          = None
+		self.__replacements   = None
 		self.__signals        = None
 
 		if not self.config_file:
@@ -297,6 +327,14 @@ class Config:
 			'', '', '', '', '', ''
 		)
 
+		self.__replacements = weechat.config_new_option(
+			self.config_file, self.sorting_section,
+			'replacements', 'string',
+			'An ordered list of replacement patterns to use on buffer name components, encoded as JSON. See /help autosort for commands to manipulate these replacements.',
+			'', 0, 0, Config.default_replacements, Config.default_replacements, 0,
+			'', '', '', '', '', ''
+		)
+
 		self.__signals = weechat.config_new_option(
 			self.config_file, self.sorting_section,
 			'signals', 'string',
@@ -318,15 +356,22 @@ class Config:
 
 		self.case_sensitive = weechat.config_boolean(self.__case_sensitive)
 		self.group_irc      = weechat.config_boolean(self.__group_irc)
+
 		rules_blob          = weechat.config_string(self.__rules)
+		replacements_blob   = weechat.config_string(self.__replacements)
 		signals_blob        = weechat.config_string(self.__signals)
 
 		self.rules          = RuleList.decode(rules_blob)
+		self.replacements   = decode_replacements(replacements_blob)
 		self.signals        = signals_blob.split()
 
 	def save_rules(self, run_callback = True):
 		''' Save the current rules to the configuration. '''
 		weechat.config_option_set(self.__rules, RuleList.encode(self.rules), run_callback)
+
+	def save_replacements(self, run_callback = True):
+		''' Save the current replacement patterns to the configuration. '''
+		weechat.config_option_set(self.__replacements, encode_replacements(self.replacements), run_callback)
 
 
 def pad(sequence, length, padding = None):
@@ -359,15 +404,17 @@ def get_buffers():
 
 def preprocess(buffer, config):
 	'''
-	Preprocess a buffers name components.
-	This function modifies IRC buffers to group them under their server buffer if group_irc is set.
+	Preprocess a buffers names.
 	'''
+	if not config.case_sensitive:
+		buffer = buffer.lower()
+
+	for replacement in config.replacements:
+		buffer = buffer.replace(replacement[0], replacement[1])
+
 	buffer = buffer.split('.')
 	if config.group_irc and len(buffer) >= 2 and buffer[0] == 'irc' and buffer[1] not in ('server', 'irc_raw'):
 		buffer.insert(1, 'server')
-
-	if not config.case_sensitive:
-		buffer = map(lambda x: x.lower(), buffer)
 
 	return buffer
 
