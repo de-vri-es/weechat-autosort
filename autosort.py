@@ -153,7 +153,6 @@ class FriendlyList(object):
 
 	def __setitem__(self, index, value):
 		if not 0 <= index < len(self): raise HumanReadableError('Index out of range: expected an integer in the range [0, {}), got {}.'.format(len(self), index))
-		self.__highest      = max(self.__highest, rule[1] + 1)
 		self.__data[index] = value
 
 	def __iter__(self):
@@ -283,7 +282,6 @@ class Config:
 		self.rules            = []
 		self.replacements     = []
 		self.signals          = []
-		self.highest          = 0
 
 		self.__case_sensitive = None
 		self.__group_irc      = None
