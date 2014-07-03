@@ -446,6 +446,13 @@ def split_args(args, expected):
 	return split
 
 
+def command_sort(buffer, command, args):
+	''' Sort the buffers and print a confirmation. '''
+	on_buffers_changed()
+	log("Sorted buffers.", buffer);
+	return weechat.WEECHAT_RC_OK
+
+
 def command_rule_list(buffer, command, args):
 	''' Show the list of sorting rules. '''
 	output = 'Sorting rules:\n'
@@ -529,8 +536,12 @@ def command_rule_swap(buffer, command, args):
 def call_command(buffer, command, args, subcommands):
 	''' Call a subccommand from a dictionary. '''
 	subcommand, tail = pad(args.split(' ', 1), 2, '')
-	child            = subcommands.get(subcommand)
-	command          = command + [subcommand]
+	subcommand = subcommand.strip()
+	if (subcommand == ''):
+		child   = subcommands.get(' ')
+	else:
+		command = command + [subcommand]
+		child   = subcommands.get(subcommand)
 
 	if isinstance(child, dict):
 		return call_command(buffer, command, tail, child)
@@ -567,14 +578,19 @@ def on_autosort_command(data, buffer, args):
 	''' Called when the autosort command is invoked. '''
 	try:
 		return call_command(buffer, ['/autosort'], args, {
-			'list':   command_rule_list,
-			'add':    command_rule_add,
-			'insert': command_rule_insert,
-			'update': command_rule_update,
-			'delete': command_rule_delete,
-			'move':   command_rule_move,
-			'swap':   command_rule_swap,
-			'sort':   on_buffers_changed,
+			' ':      command_sort,
+			'sort':   command_sort,
+
+			'rule': {
+				' ':         command_rule_list,
+				'list':      command_rule_list,
+				'add':       command_rule_add,
+				'insert':    command_rule_insert,
+				'update':    command_rule_update,
+				'delete':    command_rule_delete,
+				'move':      command_rule_move,
+				'swap':      command_rule_swap,
+			},
 		})
 	except HumanReadableError as e:
 		log(e, buffer)
@@ -673,7 +689,7 @@ The same effect could also be achieved with a single rule:
 irc.server.*.[^#]* = 0
 '''
 
-command_completion = 'sort|list|add|insert|update|delete|move|swap'
+command_completion = 'sort||rules list|add|insert|update|delete|move|swap'
 
 
 if weechat.register(SCRIPT_NAME, SCRIPT_AUTHOR, SCRIPT_VERSION, SCRIPT_LICENSE, SCRIPT_DESC, "", ""):
