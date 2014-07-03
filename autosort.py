@@ -22,6 +22,15 @@
 #
 # http://github.com/de-vri.es/weechat-autosort
 #
+#
+# Changelog:
+# 2.2:
+#  * Allow configuration of signals that trigger a sort.
+#  * Allow manual sorting with /autosort sort
+# 2.1:
+#  * Fix some minor style issues.
+# 2.0:
+#  * Allow for custom sort rules.
 
 
 import weechat
@@ -175,7 +184,7 @@ class RuleList:
 		for rule in decoded:
 			# Rules must be a pattern,score pair.
 			if len(rule) != 2:
-				log('Invalid rule: expected [pattern, score], got "{}". Rule ignored.'.format(rule))
+				log('Invalid rule: expected (pattern, score), got "{}". Rule ignored.'.format(rule))
 				continue
 
 			# Rules must have a valid pattern.
@@ -269,7 +278,7 @@ class Config:
 			self.config_file, self.sorting_section,
 			'group_irc', 'boolean',
 			'If this option is on, the script pretends that IRC channel/private buffers are renamed to "irc.server.{network}.{channel}" rather than "irc.{network}.{channel}".' +
-			'This ensures that thsee buffers are grouped with their respective server buffer.',
+			'This ensures that these buffers are grouped with their respective server buffer.',
 			'', 0, 0, 'on', 'on', 0,
 			'', '', '', '', '', ''
 		)
