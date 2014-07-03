@@ -436,12 +436,12 @@ def apply_buffer_order(buffers):
 		weechat.command('', '/buffer swap {} {}'.format(buffer, i + 1))
 
 
-def split_args(args, expected):
+def split_args(args, expected, optional = 0):
 	''' Split an argument string in the desired number of arguments. '''
 	split = args.split(' ', expected - 1)
-	if (len(split) != expected):
-		raise HumanReadableError('Expected exactly {} arguments, got {}.'.format(expected, len(split)))
-	return split
+	if (len(split) < expected):
+		raise HumanReadableError('Expected at least {} arguments, got {}.'.format(expected, len(split)))
+	return split[:-1] + pad(split[-1].split(' ', optional), optional + 1, '')
 
 
 def command_sort(buffer, command, args):
@@ -543,7 +543,7 @@ def command_replacement_list(buffer, command, args):
 
 def command_replacement_add(buffer, command, args):
 	''' Add a rule to the rule list. '''
-	pattern, replacement = split_args(args, 2)
+	pattern, replacement = split_args(args, 1, 1)
 
 	config.replacements.append((pattern, replacement))
 	config.save_replacements()
@@ -554,7 +554,7 @@ def command_replacement_add(buffer, command, args):
 
 def command_replacement_insert(buffer, command, args):
 	''' Insert a rule at the desired position in the rule list. '''
-	index, pattern, replacement = split_args(args, 3)
+	index, pattern, replacement = split_args(args, 2, 1)
 	index = parse_int(index, 'index')
 
 	config.replacements.insert(index, (pattern, replacement))
@@ -565,7 +565,8 @@ def command_replacement_insert(buffer, command, args):
 
 def command_replacement_update(buffer, command, args):
 	''' Update a rule in the rule list. '''
-	index, pattern, replacement = split_args(args, 3)
+	index, pattern, replacement = split_args(args, 2, 1)
+	index = parse_int(index, 'index')
 
 	config.replacements[index] = (pattern, replacement)
 	config.save_replacements()
