@@ -21,6 +21,7 @@ This should keep your buffers sorted in almost all situations.
 However, you may wish to change the list of signals that cause your buffer list to be sorted.
 Simply edit the `autosort.sorting.signals` option to add or remove any signal you like.
 If you remove all signals you can still sort your buffers manually with the `/autosort sort` command.
+To prevent all automatic sorting, `autosort.sorting.sort_on_config_change` should also be set to off.
 
 ### Grouping IRC buffers
 In weechat, IRC channel/private buffers are named `irc.<network>.<#channel>`,

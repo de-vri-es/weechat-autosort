@@ -282,12 +282,14 @@ class Config:
 		self.rules            = []
 		self.replacements     = []
 		self.signals          = []
+		self.sort_on_config   = True
 
 		self.__case_sensitive = None
 		self.__group_irc      = None
 		self.__rules          = None
 		self.__replacements   = None
 		self.__signals        = None
+		self.__sort_on_config = None
 
 		if not self.config_file:
 			log('Failed to initialize configuration file "{}".'.format(self.filename))
@@ -341,6 +343,14 @@ class Config:
 			'', '', '', '', '', ''
 		)
 
+		self.__sort_on_config = weechat.config_new_option(
+			self.config_file, self.sorting_section,
+			'sort_on_config_change', 'boolean',
+			'Decides if the buffer list should be sorted when autosort configuration changes.',
+			'', 0, 0, 'on', 'on', 0,
+			'', '', '', '', '', ''
+		)
+
 		if weechat.config_read(self.config_file) != weechat.WEECHAT_RC_OK:
 			log('Failed to load configuration file.')
 
@@ -362,6 +372,7 @@ class Config:
 		self.rules          = RuleList.decode(rules_blob)
 		self.replacements   = decode_replacements(replacements_blob)
 		self.signals        = signals_blob.split()
+		self.sort_on_config = weechat.config_boolean(self.__sort_on_config)
 
 	def save_rules(self, run_callback = True):
 		''' Save the current rules to the configuration. '''
@@ -652,7 +663,9 @@ def on_config_changed(*args, **kwargs):
 	for signal in config.signals:
 		hooks.append(weechat.hook_signal(signal, 'on_buffers_changed', ''))
 
-	on_buffers_changed()
+	if config.sort_on_config:
+		on_buffers_changed()
+
 	return weechat.WEECHAT_RC_OK
 
 
@@ -767,6 +780,7 @@ This should keep your buffers sorted in almost all situations.
 However, you may wish to change the list of signals that cause your buffer list to be sorted.
 Simply edit the "autosort.sorting.signals" option to add or remove any signal you like.
 If you remove all signals you can still sort your buffers manually with the "/autosort sort" command.
+To prevent all automatic sorting, "autosort.sorting.sort_on_config_change" should also be set to off.
 
 ## Grouping IRC buffers
 In weechat, IRC channel/private buffers are named "irc.<network>.<#channel>",
