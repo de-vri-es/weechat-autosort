@@ -25,6 +25,8 @@
 
 #
 # Changelog:
+# 2.4:
+#   * Make script python3 compatible.
 # 2.3:
 #   * Fix sorting items without score last (regressed in 2.2).
 # 2.2:
@@ -44,7 +46,7 @@ import json
 
 SCRIPT_NAME     = 'autosort'
 SCRIPT_AUTHOR   = 'Maarten de Vries <maarten@de-vri.es>'
-SCRIPT_VERSION  = '2.3'
+SCRIPT_VERSION  = '2.4'
 SCRIPT_LICENSE  = 'GPLv3'
 SCRIPT_DESC     = 'Automatically or manually keep your buffers sorted and grouped by server.'
 
@@ -178,7 +180,7 @@ class RuleList(FriendlyList):
 
 	def encode(self):
 		''' Encode the rules for storage. '''
-		return json.dumps(map(lambda x: (x[0].pattern, x[1]), self))
+		return json.dumps(list(map(lambda x: (x[0].pattern, x[1]), self)))
 
 	@staticmethod
 	def decode(blob):
