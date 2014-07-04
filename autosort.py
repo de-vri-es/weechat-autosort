@@ -25,6 +25,8 @@
 
 #
 # Changelog:
+# 2.3:
+#   * Fix sorting items without score last (regressed in 2.2).
 # 2.2:
 #   * Add configuration option for signals that trigger a sort.
 #   * Add command to manually trigger a sort (/autosort sort).
@@ -42,7 +44,7 @@ import json
 
 SCRIPT_NAME     = 'autosort'
 SCRIPT_AUTHOR   = 'Maarten de Vries <maarten@de-vri.es>'
-SCRIPT_VERSION  = '2.2'
+SCRIPT_VERSION  = '2.3'
 SCRIPT_LICENSE  = 'GPLv3'
 SCRIPT_DESC     = 'Automatically or manually keep your buffers sorted and grouped by server.'
 
@@ -172,7 +174,7 @@ class RuleList(FriendlyList):
 		''' Get the sort score of a partial name according to a rule list. '''
 		for rule in self:
 			if rule[0].match(name): return rule[1]
-		return max(self, key=lambda x: rule[1])[1] + 1
+		return 999999999
 
 	def encode(self):
 		''' Encode the rules for storage. '''
