@@ -49,7 +49,7 @@ Sort rules use the following syntax:
 ```
 <glob-pattern> = <score>
 ```
-You can use the `/autosort rule` command to show and manipulate the list of sort rules.
+You can use the `/autosort rules` command to show and manipulate the list of sort rules.
 
 
 Allowed special characters in the glob patterns are:
