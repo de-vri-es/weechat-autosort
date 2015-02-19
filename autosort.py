@@ -25,6 +25,8 @@
 
 #
 # Changelog:
+# 2.5:
+#   * Add hint to set irc.look.server_buffer to independent and buffers.look.indenting to on.
 # 2.4:
 #   * Make script python3 compatible.
 # 2.3:
@@ -46,7 +48,7 @@ import json
 
 SCRIPT_NAME     = 'autosort'
 SCRIPT_AUTHOR   = 'Maarten de Vries <maarten@de-vri.es>'
-SCRIPT_VERSION  = '2.4'
+SCRIPT_VERSION  = '2.5'
 SCRIPT_LICENSE  = 'GPL3'
 SCRIPT_DESC     = 'Automatically or manually keep your buffers sorted and grouped by server.'
 
@@ -708,6 +710,8 @@ def on_autosort_command(data, buffer, args):
 
 
 command_description = r'''
+NOTE: For the best effect, you may want to consider setting the option irc.look.server_buffer to independent and buffers.look.indenting to on.
+
 # Commands
 
 ## Miscellaneous

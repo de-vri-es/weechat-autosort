@@ -6,6 +6,8 @@ The sort order can be customized by defining your own sort rules,
 but the default should be sane enough for most people.
 It can also group IRC channel/private buffers under their server buffer if you like.
 
+For the best effect, you may want to consider setting the option `irc.look.server_buffer` to `independent` and `buffers.look.indenting` to `on`.
+
 Autosort first turns buffer names into a list of their components by splitting on them on the period character.
 For example, the buffer name `irc.server.freenode` is turned into `['irc', 'server', 'freenode']`
 The buffers are then lexicographically sorted.
