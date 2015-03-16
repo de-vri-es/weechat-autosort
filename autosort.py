@@ -26,6 +26,7 @@
 #
 # Changelog:
 # 2.5:
+#   * Fix handling unicode buffer names.
 #   * Add hint to set irc.look.server_buffer to independent and buffers.look.indenting to on.
 # 2.4:
 #   * Make script python3 compatible.
@@ -439,7 +440,7 @@ def buffer_sort_key(rules):
 	def key(buffer):
 		result  = []
 		name    = ''
-		for word in preprocess(buffer, config):
+		for word in preprocess(buffer.decode('utf-8'), config):
 			name += ('.' if name else '') + word
 			result.append((rules.get_score(name, rules), word))
 		return result
