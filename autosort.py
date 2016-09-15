@@ -458,7 +458,10 @@ def buffer_sort_key(rules):
 def apply_buffer_order(order):
 	''' Sort the buffers in weechat according to the given order. '''
 	indices = list(order)
-	reverse = [j for _, j in sorted(zip(indices, range(len(indices))))]
+	reverse = [0] * len(indices)
+	for i, index in enumerate(indices):
+		reverse[index] = i
+
 	for i in range(len(indices)):
 		wanted = indices[i]
 		if wanted == i: continue
