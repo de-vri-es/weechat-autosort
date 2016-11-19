@@ -447,7 +447,7 @@ def buffer_sort_key(rules):
 	def key(buffer):
 		result  = []
 		name    = ''
-		for word in preprocess(buffer[0].decode('utf-8'), config):
+		for word in preprocess(buffer[0], config):
 			name += ('.' if name else '') + word
 			result.append((rules.get_score(name), word))
 		return result
