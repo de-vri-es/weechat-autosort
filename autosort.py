@@ -429,6 +429,12 @@ def preprocess(buffer, config):
 	'''
 	Preprocess a buffers names.
 	'''
+
+	# Make sure the name is a unicode string.
+	# On python3 this is a NOP since the string type is already decoded as UTF-8.
+	if isinstance(buffer, bytes):
+		buffer = buffer.decode('utf-8')
+
 	if not config.case_sensitive:
 		buffer = buffer.lower()
 
