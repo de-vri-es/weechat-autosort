@@ -25,6 +25,8 @@
 
 #
 # Changelog:
+# 2.8:
+#   * Fix compatibility with python 3 regarding unicode handling.
 # 2.7:
 #   * Fix sorting of buffers with spaces in their name.
 # 2.6:
@@ -53,7 +55,7 @@ import json
 
 SCRIPT_NAME     = 'autosort'
 SCRIPT_AUTHOR   = 'Maarten de Vries <maarten@de-vri.es>'
-SCRIPT_VERSION  = '2.7'
+SCRIPT_VERSION  = '2.8'
 SCRIPT_LICENSE  = 'GPL3'
 SCRIPT_DESC     = 'Automatically or manually keep your buffers sorted and grouped by server.'
 
