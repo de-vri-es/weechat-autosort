@@ -451,8 +451,11 @@ def command_rule_swap(buffer, command, args):
 def command_helper_list(buffer, command, args):
 	''' Show the list of helpers. '''
 	output = 'Helper variables:\n'
+
+	width = max(map(lambda x: len(x) if len(x) <= 30 else 0, config.helpers.keys()))
+
 	for name, expression in sorted(config.helpers.items()):
-		output += '    {}: {}\n'.format(name, expression)
+		output += '    {:>{width}}: {}\n'.format(name, expression, width=width)
 	if not len(config.helpers):
 		output += '    No helper variables configured.'
 	log(output)
