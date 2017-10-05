@@ -54,6 +54,7 @@
 import weechat
 import re
 import json
+import time
 
 SCRIPT_NAME     = 'autosort'
 SCRIPT_AUTHOR   = 'Maarten de Vries <maarten@de-vri.es>'
@@ -65,6 +66,11 @@ SCRIPT_DESC     = 'Automatically or manually keep your buffers sorted and groupe
 config = None
 hooks  = []
 timer  = None
+
+if hasattr(time, 'perf_counter'):
+	perf_counter = time.perf_counter
+else:
+	perf_counter = time.clock
 
 def casefold(string):
 	if hasattr(string, 'casefold'): return string.casefold()
@@ -336,12 +342,19 @@ def command_debug(buffer, command, args):
 
 	# Show evaluation results.
 	log('Individual evaluation results:')
+	start = perf_counter()
 	key = buffer_sort_key(config.rules, config.helpers, config.case_sensitive)
+	results = []
 	for merged in buffers:
 		for buffer in merged:
 			fullname = weechat.hdata_string(hdata, buffer, 'full_name')
 			if isinstance(fullname, bytes): fullname = fullname.decode('utf-8')
-			log('{}: {}'.format(fullname, key(buffer)))
+			results.append((fullname, key(buffer)))
+	elapsed = perf_counter() - start
+
+	for fullname, result in results:
+			log('{}: {}'.format(fullname, result))
+	log('Computing evalutaion results took {:.4f} seconds.'.format(elapsed))
 
 	return weechat.WEECHAT_RC_OK
 
