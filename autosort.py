@@ -145,6 +145,7 @@ class Config:
 		self.filename         = filename
 		self.config_file      = weechat.config_new(self.filename, '', '')
 		self.sorting_section  = None
+		self.v3_section       = None
 
 		self.case_sensitive   = False
 		self.rules            = []
@@ -165,6 +166,7 @@ class Config:
 			return
 
 		self.sorting_section = weechat.config_new_section(self.config_file, 'sorting', False, False, '', '', '', '', '', '', '', '', '', '')
+		self.v3_section      = weechat.config_new_section(self.config_file, 'v3',      False, False, '', '', '', '', '', '', '', '', '', '')
 
 		if not self.sorting_section:
 			log('Failed to initialize section "sorting" of configuration file.')
@@ -180,7 +182,7 @@ class Config:
 		)
 
 		self.__rules = weechat.config_new_option(
-			self.config_file, self.sorting_section,
+			self.config_file, self.v3_section,
 			'rules', 'string',
 			'An ordered list of sorting rules encoded as JSON. See /help autosort for commands to manipulate these rules.',
 			'', 0, 0, Config.default_rules, Config.default_rules, 0,
@@ -188,7 +190,7 @@ class Config:
 		)
 
 		self.__helpers = weechat.config_new_option(
-			self.config_file, self.sorting_section,
+			self.config_file, self.v3_section,
 			'helpers', 'string',
 			'A dictionary helper variables to use in the sorting rules, encoded as JSON. See /help autosort for commands to manipulate these helpers.',
 			'', 0, 0, Config.default_helpers, Config.default_helpers, 0,
@@ -683,6 +685,9 @@ Earlier rules will be considered first.
 Only if earlier rules produced identical results is the result of the next rule considered for sorting purposes.
 
 You can debug your sort rules with the `/autosort debug` command, which will print the evaluation results of each rule for each buffer.
+
+NOTE: The sort rules for version 3 are not compatible with version 2 or vice versa.
+You will have to manually port your old rules to version 3 if you have any.
 
 ## Helper variables
 You may define helper variables for the main sort rules to keep your rules readable.
