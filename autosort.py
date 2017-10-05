@@ -27,6 +27,7 @@
 # Changelog:
 # 3.0:
 #   * Switch to evaluated expressions for sorting.
+#   * Add ${info:replace,from,to,text} as helper pattern.
 # 2.8:
 #   * Fix compatibility with python 3 regarding unicode handling.
 # 2.7:
@@ -543,6 +544,36 @@ def on_config_changed(*args, **kwargs):
 
 	return weechat.WEECHAT_RC_OK
 
+def parse_arg(args):
+	if not args: return None, None
+
+	escaped = False
+	for i, c in enumerate(args):
+		if escaped:
+			escaped = False
+		elif c == '\\':
+			escaped = True
+		elif c == ',':
+			return args[:i], args[i+1:]
+	return args, None
+
+def parse_args(args, count):
+	result = []
+	for i in range(count):
+		arg, args = parse_arg(args)
+		if arg is None: return
+		result.append(arg)
+	return result, args
+
+def on_info_replace(pointer, name, arguments):
+	arguments, rest = parse_args(arguments, 3)
+	if rest or len(arguments) < 3:
+		log('usage: ${{info:{},old,new,text}}'.format(name))
+		return ''
+	old, new, text = arguments
+
+	return text.replace(old, new)
+
 
 def on_autosort_command(data, buffer, args):
 	''' Called when the autosort command is invoked. '''
@@ -649,6 +680,11 @@ You may define helper variables for the main sort rules to keep your rules reada
 They can be used in the main sort rules as variables.
 For example, a helper variable named `foo` can be accessed in a main rule with the string `${foo}`.
 
+## Replacing substrings
+There is no default method for replacing text inside eval expressions.
+However, autosort adds a `replace` info hook that can be used inside eval expressions: `${info:autosort_replace,from,to,text}`.
+For example, `${info:autosort_replace,#,,${buffer.name}}` will evaluate to the buffer name with all hash signs stripped.
+
 ## Automatic or manual sorting
 By default, autosort will automatically sort your buffer list whenever a buffer is opened, merged, unmerged or renamed.
 This should keep your buffers sorted in almost all situations.
@@ -664,6 +700,9 @@ command_completion = 'sort||debug||rules list|add|insert|update|delete|move|swap
 if weechat.register(SCRIPT_NAME, SCRIPT_AUTHOR, SCRIPT_VERSION, SCRIPT_LICENSE, SCRIPT_DESC, "", ""):
 	config = Config('autosort')
 
-	weechat.hook_config('autosort.*',      'on_config_changed',  '')
+	weechat.hook_config('autosort.*', 'on_config_changed',  '')
 	weechat.hook_command('autosort', command_description, '', '', command_completion, 'on_autosort_command', 'NULL')
-	on_config_changed()
+	weechat.hook_info('autosort_replace', 'Replace a substring with another string.', 'NULL', 'on_info_replace', 'NULL')
+
+	if config.sort_on_config:
+		do_sort()
