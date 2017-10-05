@@ -84,12 +84,27 @@ def parse_int(arg, arg_name = 'argument'):
 
 def decode_rules(blob):
 	parsed = json.loads(blob)
-	if not isinstance(parsed, list): raise HumanReadableError('Parsed rules are not a list. Please fix the setting manually.')
+	if not isinstance(parsed, list):
+		log('Malformed rules, expected a JSON encoded list of strings, but got a {}. No rules have been loaded. Please fix the setting manually.'.format(type(parsed)))
+		return []
+
+	for i, entry in enumerate(parsed):
+		if not isinstance(entry, (str, unicode)):
+			log('Rule #{} is not a string but a {}. No rules have been loaded. Please fix the setting manually.'.format(i, type(entry)))
+			return []
+
 	return parsed
 
 def decode_helpers(blob):
 	parsed = json.loads(blob)
-	if not isinstance(parsed, dict): raise HumanReadableError('Parsed helpers are not a dictionary. Please fix the setting manually.')
+	if not isinstance(parsed, dict):
+		log('Malformed helpers, expected a JSON encoded dictonary but got a {}. No helpers have been loaded. Please fix the setting manually.'.format(type(parsed)))
+		return {}
+
+	for key, value in parsed.items():
+		if not isinstance(value, (str, unicode)):
+			log('Helper "{}" is not a string but a {}. No helpers have been loaded. Please fix seting manually.'.format(key, type(value)))
+			return {}
 	return parsed
 
 class Config:
