@@ -61,7 +61,7 @@ SCRIPT_NAME     = 'autosort'
 SCRIPT_AUTHOR   = 'Maarten de Vries <maarten@de-vri.es>'
 SCRIPT_VERSION  = '3.0'
 SCRIPT_LICENSE  = 'GPL3'
-SCRIPT_DESC     = 'Automatically or manually keep your buffers sorted and grouped by server.'
+SCRIPT_DESC     = 'Highly flexible automatic (or manual) buffer sorting based on eval expressions (not backwards compatible with v2 rules).'
 
 
 config = None
