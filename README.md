@@ -27,6 +27,7 @@ For example, a helper variable named `foo` can be accessed in a main rule with t
 There is no default method for replacing text inside eval expressions.
 However, autosort adds a `replace` info hook that can be used inside eval expressions: `${info:autosort_replace,from,to,text}`.
 For example, `${info:autosort_replace,#,,${buffer.name}}` will evaluate to the buffer name with all hash signs stripped.
+You can escape commas and backslashes inside the arguments by prefixing them with a backslash.
 
 ### Automatic or manual sorting
 By default, autosort will automatically sort your buffer list whenever a buffer is opened, merged, unmerged or renamed.

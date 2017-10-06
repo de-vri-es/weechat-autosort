@@ -561,21 +561,24 @@ def on_config_changed(*args, **kwargs):
 def parse_arg(args):
 	if not args: return None, None
 
+	result  = ''
 	escaped = False
 	for i, c in enumerate(args):
-		if escaped:
-			escaped = False
-		elif c == '\\':
-			escaped = True
-		elif c == ',':
-			return args[:i], args[i+1:]
-	return args, None
+		if not escaped:
+			if c == '\\':
+				escaped = True
+				continue
+			elif c == ',':
+				return result, args[i+1:]
+		result  += c
+		escaped  = False
+	return result, None
 
 def parse_args(args, count):
 	result = []
 	for i in range(count):
 		arg, args = parse_arg(args)
-		if arg is None: return
+		if arg is None: break
 		result.append(arg)
 	return result, args
 
@@ -701,6 +704,7 @@ For example, a helper variable named `foo` can be accessed in a main rule with t
 There is no default method for replacing text inside eval expressions.
 However, autosort adds a `replace` info hook that can be used inside eval expressions: `${info:autosort_replace,from,to,text}`.
 For example, `${info:autosort_replace,#,,${buffer.name}}` will evaluate to the buffer name with all hash signs stripped.
+You can escape commas and backslashes inside the arguments by prefixing them with a backslash.
 
 ## Automatic or manual sorting
 By default, autosort will automatically sort your buffer list whenever a buffer is opened, merged, unmerged or renamed.
