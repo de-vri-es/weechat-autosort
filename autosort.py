@@ -550,10 +550,7 @@ def on_timeout(pointer, remaining_calls):
 	do_sort()
 	return weechat.WEECHAT_RC_OK
 
-def on_config_changed(*args, **kwargs):
-	''' Called whenever the configuration changes. '''
-	config.reload()
-
+def apply_config():
 	# Unhook all signals and hook the new ones.
 	for hook in hooks:
 		weechat.unhook(hook)
@@ -562,6 +559,11 @@ def on_config_changed(*args, **kwargs):
 
 	if config.sort_on_config:
 		do_sort()
+
+def on_config_changed(*args, **kwargs):
+	''' Called whenever the configuration changes. '''
+	config.reload()
+	apply_config()
 
 	return weechat.WEECHAT_RC_OK
 
@@ -788,5 +790,4 @@ if weechat.register(SCRIPT_NAME, SCRIPT_AUTHOR, SCRIPT_VERSION, SCRIPT_LICENSE, 
 	weechat.hook_command('autosort', command_description, '', '', command_completion, 'on_autosort_command', 'NULL')
 	weechat.hook_info('autosort_replace', info_replace_description, info_replace_arguments, 'on_info_replace', 'NULL')
 
-	if config.sort_on_config:
-		do_sort()
+	apply_config()
