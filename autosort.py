@@ -92,12 +92,12 @@ def parse_int(arg, arg_name = 'argument'):
 def decode_rules(blob):
 	parsed = json.loads(blob)
 	if not isinstance(parsed, list):
-		log('Malformed rules, expected a JSON encoded list of strings, but got a {}. No rules have been loaded. Please fix the setting manually.'.format(type(parsed)))
+		log('Malformed rules, expected a JSON encoded list of strings, but got a {0}. No rules have been loaded. Please fix the setting manually.'.format(type(parsed)))
 		return []
 
 	for i, entry in enumerate(parsed):
 		if not isinstance(entry, (str, unicode)):
-			log('Rule #{} is not a string but a {}. No rules have been loaded. Please fix the setting manually.'.format(i, type(entry)))
+			log('Rule #{0} is not a string but a {1}. No rules have been loaded. Please fix the setting manually.'.format(i, type(entry)))
 			return []
 
 	return parsed
@@ -105,12 +105,12 @@ def decode_rules(blob):
 def decode_helpers(blob):
 	parsed = json.loads(blob)
 	if not isinstance(parsed, dict):
-		log('Malformed helpers, expected a JSON encoded dictonary but got a {}. No helpers have been loaded. Please fix the setting manually.'.format(type(parsed)))
+		log('Malformed helpers, expected a JSON encoded dictonary but got a {0}. No helpers have been loaded. Please fix the setting manually.'.format(type(parsed)))
 		return {}
 
 	for key, value in parsed.items():
 		if not isinstance(value, (str, unicode)):
-			log('Helper "{}" is not a string but a {}. No helpers have been loaded. Please fix seting manually.'.format(key, type(value)))
+			log('Helper "{0}" is not a string but a {1}. No helpers have been loaded. Please fix seting manually.'.format(key, type(value)))
 			return {}
 	return parsed
 
@@ -365,8 +365,8 @@ def command_debug(buffer, command, args):
 	elapsed = perf_counter() - start
 
 	for fullname, result in results:
-			log('{}: {}'.format(fullname, result))
-	log('Computing evalutaion results took {:.4f} seconds.'.format(elapsed))
+			log('{0}: {1}'.format(fullname, result))
+	log('Computing evalutaion results took {0:.4f} seconds.'.format(elapsed))
 
 	return weechat.WEECHAT_RC_OK
 
@@ -455,7 +455,7 @@ def command_helper_list(buffer, command, args):
 	width = max(map(lambda x: len(x) if len(x) <= 30 else 0, config.helpers.keys()))
 
 	for name, expression in sorted(config.helpers.items()):
-		output += '    {:>{width}}: {}\n'.format(name, expression, width=width)
+		output += '    {0:>{width}}: {1}\n'.format(name, expression, width=width)
 	if not len(config.helpers):
 		output += '    No helper variables configured.'
 	log(output)
@@ -491,7 +491,7 @@ def command_helper_rename(buffer, command, args):
 		config.helpers[new_name] = config.helpers[old_name]
 		del config.helpers[old_name]
 	except KeyError:
-		raise HumanReadableError('No such helper: {}'.format(old_name))
+		raise HumanReadableError('No such helper: {0}'.format(old_name))
 	config.save_helpers()
 	command_helper_list(buffer, command, '')
 	return weechat.WEECHAT_RC_OK
@@ -503,7 +503,7 @@ def command_helper_swap(buffer, command, args):
 	try:
 		config.helpers[b], config.helpers[a] = config.helpers[a], config.helpers[b]
 	except KeyError as e:
-		raise HumanReadableError('No such helper: {}'.format(e.args[0]))
+		raise HumanReadableError('No such helper: {0}'.format(e.args[0]))
 
 	config.helpers.swap(index_a, index_b)
 	config.save_helpers()
@@ -585,7 +585,7 @@ def parse_args(args, count):
 def on_info_replace(pointer, name, arguments):
 	arguments, rest = parse_args(arguments, 3)
 	if rest or len(arguments) < 3:
-		log('usage: ${{info:{},old,new,text}}'.format(name))
+		log('usage: ${{info:{0},old,new,text}}'.format(name))
 		return ''
 	old, new, text = arguments
 
