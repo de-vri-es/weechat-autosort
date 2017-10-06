@@ -723,13 +723,16 @@ To prevent all automatic sorting, "autosort.sorting.sort_on_config_change" shoul
 
 command_completion = 'sort||debug||rules list|add|insert|update|delete|move|swap||helpers list|set|delete|rename|swap'
 
+info_replace_description = 'Replace all occurences of `from` with `to` in the string `text`.'
+info_replace_arguments   = 'from,to,text'
+
 
 if weechat.register(SCRIPT_NAME, SCRIPT_AUTHOR, SCRIPT_VERSION, SCRIPT_LICENSE, SCRIPT_DESC, "", ""):
 	config = Config('autosort')
 
 	weechat.hook_config('autosort.*', 'on_config_changed',  '')
 	weechat.hook_command('autosort', command_description, '', '', command_completion, 'on_autosort_command', 'NULL')
-	weechat.hook_info('autosort_replace', 'Replace a substring with another string.', 'NULL', 'on_info_replace', 'NULL')
+	weechat.hook_info('autosort_replace', info_replace_description, info_replace_arguments, 'on_info_replace', 'NULL')
 
 	if config.sort_on_config:
 		do_sort()
