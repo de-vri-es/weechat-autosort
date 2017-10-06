@@ -78,6 +78,12 @@ def casefold(string):
 	# Fall back to lowercasing for python2.
 	return string.lower()
 
+def list_swap(values, a, b):
+	values[a], values[b] = values[b], values[a]
+
+def list_move(values, old_index, new_index):
+	values.insert(new_index, values.pop(old_index))
+
 class HumanReadableError(Exception):
 	pass
 
@@ -430,7 +436,7 @@ def command_rule_move(buffer, command, args):
 	index_a = parse_int(index_a, 'index')
 	index_b = parse_int(index_b, 'index')
 
-	config.rules.move(index_a, index_b)
+	list_move(config.rules, index_a, index_b)
 	config.save_rules()
 	command_rule_list(buffer, command, '')
 	return weechat.WEECHAT_RC_OK
@@ -442,7 +448,7 @@ def command_rule_swap(buffer, command, args):
 	index_a = parse_int(index_a, 'index')
 	index_b = parse_int(index_b, 'index')
 
-	config.rules.swap(index_a, index_b)
+	list_swap(config.rules, index_a, index_b)
 	config.save_rules()
 	command_rule_list(buffer, command, '')
 	return weechat.WEECHAT_RC_OK
