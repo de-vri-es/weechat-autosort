@@ -28,6 +28,7 @@
 # 3.0:
 #   * Switch to evaluated expressions for sorting.
 #   * Add ${info:replace,from,to,text} as helper pattern.
+#   * Make tab completion context aware.
 # 2.8:
 #   * Fix compatibility with python 3 regarding unicode handling.
 # 2.7:
@@ -629,6 +630,58 @@ def on_autosort_command(data, buffer, args):
 		log(e, buffer)
 		return weechat.WEECHAT_RC_ERROR
 
+def add_completions(completion, words):
+	for word in words:
+		weechat.hook_completion_list_add(completion, word, 0, weechat.WEECHAT_LIST_POS_END)
+
+def autosort_complete_rules(words, completion):
+	if len(words) == 0:
+		add_completions(completion, ['add', 'delete', 'insert', 'list', 'move', 'swap', 'update'])
+	if len(words) == 1 and words[0] in ('delete', 'insert', 'move', 'swap', 'update'):
+		add_completions(completion, map(str, range(len(config.rules))))
+	if len(words) == 2 and words[0] in ('move', 'swap'):
+		add_completions(completion, map(str, range(len(config.rules))))
+	if len(words) == 2 and words[0] in ('update'):
+		try:
+			add_completions(completion, [config.rules[int(words[1])]])
+		except KeyError: pass
+		except ValueError: pass
+	else:
+		add_completions(completion, [''])
+	return weechat.WEECHAT_RC_OK
+
+def autosort_complete_helpers(words, completion):
+	if len(words) == 0:
+		add_completions(completion, ['delete', 'list', 'rename', 'set', 'swap'])
+	elif len(words) == 1 and words[0] in ('delete', 'rename', 'set', 'swap'):
+		add_completions(completion, sorted(config.helpers.keys()))
+	elif len(words) == 2 and words[0] == 'swap':
+		add_completions(completion, sorted(config.helpers.keys()))
+	elif len(words) == 2 and words[0] == 'rename':
+		add_completions(completion, sorted(config.helpers.keys()))
+	elif len(words) == 2 and words[0] == 'set':
+		try:
+			add_completions(completion, [config.helpers[words[1]]])
+		except KeyError: pass
+	return weechat.WEECHAT_RC_OK
+
+def on_autosort_complete(data, name, buffer, completion):
+	cmdline = weechat.buffer_get_string(buffer, "input")
+	cursor  = weechat.buffer_get_integer(buffer, "input_pos")
+	prefix  = cmdline[:cursor]
+	words   = prefix.split()[1:]
+
+	# If the current word isn't finished yet,
+	# ignore it for coming up with completion suggestions.
+	if prefix[-1] != ' ': words = words[:-1]
+
+	if len(words) == 0:
+		add_completions(completion, ['debug', 'helpers', 'rules', 'sort'])
+	elif words[0] == 'rules':
+		return autosort_complete_rules(words[1:], completion)
+	elif words[0] == 'helpers':
+		return autosort_complete_helpers(words[1:], completion)
+	return weechat.WEECHAT_RC_OK
 
 command_description = r'''
 NOTE: For the best effect, you may want to consider setting the option irc.look.server_buffer to independent and buffers.look.indenting to on.
@@ -721,7 +774,7 @@ If you remove all signals you can still sort your buffers manually with the "/au
 To prevent all automatic sorting, "autosort.sorting.sort_on_config_change" should also be set to off.
 '''
 
-command_completion = 'sort||debug||rules list|add|insert|update|delete|move|swap||helpers list|set|delete|rename|swap'
+command_completion = '%(plugin_autosort) %(plugin_autosort) %(plugin_autosort) %(plugin_autosort) %(plugin_autosort)'
 
 info_replace_description = 'Replace all occurences of `from` with `to` in the string `text`.'
 info_replace_arguments   = 'from,to,text'
@@ -731,6 +784,7 @@ if weechat.register(SCRIPT_NAME, SCRIPT_AUTHOR, SCRIPT_VERSION, SCRIPT_LICENSE, 
 	config = Config('autosort')
 
 	weechat.hook_config('autosort.*', 'on_config_changed',  '')
+	weechat.hook_completion('plugin_autosort', '', 'on_autosort_complete', '')
 	weechat.hook_command('autosort', command_description, '', '', command_completion, 'on_autosort_command', 'NULL')
 	weechat.hook_info('autosort_replace', info_replace_description, info_replace_arguments, 'on_info_replace', 'NULL')
 
