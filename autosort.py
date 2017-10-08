@@ -135,6 +135,7 @@ class Config:
 		'${core_first}',
 		'${irc_last}',
 		'${buffer.plugin.name}',
+		'${irc_raw_first}',
 		'${server}',
 		'${info:autosort_order,${type},server,*,channel,private}',
 		'${hashless_name}',
@@ -145,6 +146,8 @@ class Config:
 		'core_first':     '${if:${buffer.full_name}!=core.weechat}',
 		'irc_first':      '${if:${buffer.plugin.name}!=irc}',
 		'irc_last':       '${if:${buffer.plugin.name}==irc}',
+		'irc_raw_first':  '${if:${buffer.full_name}!=irc.irc_raw}',
+		'irc_raw_last':   '${if:${buffer.full_name}==irc.irc_raw}',
 		'hashless_name':  '${info:autosort_replace,#,,${buffer.name}}',
 	})
 
