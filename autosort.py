@@ -136,18 +136,15 @@ class Config:
 		'${irc_last}',
 		'${buffer.plugin.name}',
 		'${server}',
-		'${servers_first}',
-		'${channels_first}',
+		'${info:autosort_order,${type},server,*,channel,private}',
 		'${hashless_name}',
+		'${buffer.full_name}',
 	])
 
 	default_helpers = json.dumps({
-		'core_first':     '${if:${buffer.full_name}==core.weechat?0:1}',
-		'irc_first':      '${if:${buffer.plugin.name}==irc?0:1}',
-		'irc_last':       '${if:${buffer.plugin.name}==irc?1:0}',
-		'servers_first':  '${if:${type}==server?0:1}',
-		'channels_first': '${if:${type}==channel?0:1}',
-		'private_first':  '${if:${type}==private?0:1}',
+		'core_first':     '${if:${buffer.full_name}!=core.weechat}',
+		'irc_first':      '${if:${buffer.plugin.name}!=irc}',
+		'irc_last':       '${if:${buffer.plugin.name}==irc}',
 		'hashless_name':  '${info:autosort_replace,#,,${buffer.name}}',
 	})
 
