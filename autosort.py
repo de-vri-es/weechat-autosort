@@ -393,7 +393,7 @@ def command_rule_list(buffer, command, args):
 		output += '    {0}: {1}\n'.format(i, rule)
 	if not len(config.rules):
 		output += '    No sorting rules configured.\n'
-	log(output, buffer)
+	log(output )
 
 	return weechat.WEECHAT_RC_OK
 
@@ -659,7 +659,7 @@ def on_autosort_command(data, buffer, args):
 			},
 		})
 	except HumanReadableError as e:
-		log(e, buffer)
+		log(e)
 		return weechat.WEECHAT_RC_ERROR
 
 def add_completions(completion, words):
