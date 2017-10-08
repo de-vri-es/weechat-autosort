@@ -358,8 +358,10 @@ def do_sort():
 
 def command_sort(buffer, command, args):
 	''' Sort the buffers and print a confirmation. '''
+	start = perf_counter()
 	do_sort()
-	log("Finished sorting buffers.", buffer)
+	elapsed = perf_counter() - start
+	log("Finished sorting buffers in {0:.4f} seconds.".format(elapsed))
 	return weechat.WEECHAT_RC_OK
 
 def command_debug(buffer, command, args):
