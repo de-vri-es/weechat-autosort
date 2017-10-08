@@ -195,6 +195,22 @@ class Config:
 			'', '', '', '', '', ''
 		)
 
+		weechat.config_new_option(
+			self.config_file, self.sorting_section,
+			'rules', 'string',
+			'Sort rules used by autosort v2.x and below. Not used by autosort anymore.',
+			'', 0, 0, '', '', 0,
+			'', '', '', '', '', ''
+		)
+
+		weechat.config_new_option(
+			self.config_file, self.sorting_section,
+			'replacements', 'string',
+			'Replacement patterns used by autosort v2.x and below. Not used by autosort anymore.',
+			'', 0, 0, '', '', 0,
+			'', '', '', '', '', ''
+		)
+
 		self.__rules = weechat.config_new_option(
 			self.config_file, self.v3_section,
 			'rules', 'string',
