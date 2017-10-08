@@ -151,6 +151,8 @@ class Config:
 		'hashless_name':  '${info:autosort_replace,#,,${buffer.name}}',
 	})
 
+	default_signal_delay = 5
+
 	default_signals = 'buffer_opened buffer_merged buffer_unmerged buffer_renamed'
 
 	def __init__(self, filename):
@@ -165,7 +167,7 @@ class Config:
 		self.rules            = []
 		self.helpers          = {}
 		self.signals          = []
-		self.signal_delay     = 100
+		self.signal_delay     = Config.default_signal_delay,
 		self.sort_on_config   = True
 
 		self.__case_sensitive = None
@@ -239,7 +241,7 @@ class Config:
 			self.config_file, self.sorting_section,
 			'signal_delay', 'integer',
 			'Delay in milliseconds to wait after a signal before sorting the buffer list. This prevents triggering many times if multiple signals arrive in a short time. It can also be needed to wait for buffer localvars to be available.',
-			'', 0, 1000, "5", "100", 0,
+			'', 0, 1000, str(Config.default_signal_delay), str(Config.default_signal_delay), 0,
 			'', '', '', '', '', ''
 		)
 
