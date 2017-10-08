@@ -27,7 +27,8 @@
 # Changelog:
 # 3.0:
 #   * Switch to evaluated expressions for sorting.
-#   * Add ${info:replace,from,to,text} as helper pattern.
+#   * Add ${info:autosort_replace,from,to,text} to replace substrings in sort rules.
+#   * Add ${info:autosort_order,value,first,second,third} to ease writing sort rules.
 #   * Make tab completion context aware.
 # 2.8:
 #   * Fix compatibility with python 3 regarding unicode handling.
@@ -53,10 +54,11 @@
 #
 
 
-import weechat
-import re
 import json
+import math
+import re
 import time
+import weechat
 
 SCRIPT_NAME     = 'autosort'
 SCRIPT_AUTHOR   = 'Maarten de Vries <maarten@de-vri.es>'
@@ -84,6 +86,11 @@ def list_swap(values, a, b):
 
 def list_move(values, old_index, new_index):
 	values.insert(new_index, values.pop(old_index))
+
+def list_find(collection, value):
+	for i, elem in enumerate(collection):
+		if elem == value: return i
+	return None
 
 class HumanReadableError(Exception):
 	pass
@@ -583,12 +590,14 @@ def parse_arg(args):
 		escaped  = False
 	return result, None
 
-def parse_args(args, count):
+def parse_args(args, max = None):
 	result = []
-	for i in range(count):
+	i = 0
+	while max is None or i < max:
 		arg, args = parse_arg(args)
 		if arg is None: break
 		result.append(arg)
+		i += 1
 	return result, args
 
 def on_info_replace(pointer, name, arguments):
@@ -599,6 +608,25 @@ def on_info_replace(pointer, name, arguments):
 	old, new, text = arguments
 
 	return text.replace(old, new)
+
+def on_info_order(pointer, name, arguments):
+	arguments, rest = parse_args(arguments)
+	if len(arguments) < 1:
+		log('usage: ${{info:{0},value,first,second,third,...}}'.format(name))
+		return ''
+
+	value = arguments[0]
+	keys  = arguments[1:]
+	if not keys: return '0'
+
+	# Find the value in the keys (or '*' if we can't find it)
+	result = list_find(keys, value)
+	if result is None: result = list_find(keys, '*')
+	if result is None: result = len(keys)
+
+	# Pad result with leading zero to make sure string sorting works.
+	width = int(math.log10(len(keys))) + 1
+	return '{0:0{1}}'.format(result, width)
 
 
 def on_autosort_command(data, buffer, args):
@@ -781,13 +809,21 @@ command_completion = '%(plugin_autosort) %(plugin_autosort) %(plugin_autosort) %
 info_replace_description = 'Replace all occurences of `from` with `to` in the string `text`.'
 info_replace_arguments   = 'from,to,text'
 
+info_order_description = (
+	'Get a zero padded index of a value in a list of possible values.'
+	'If the value is not found, the index for `*` is returned.'
+	'If there is no `*` in the list, the highest index + 1 is returned.'
+)
+info_order_arguments   = 'value,first,second,third,...'
+
 
 if weechat.register(SCRIPT_NAME, SCRIPT_AUTHOR, SCRIPT_VERSION, SCRIPT_LICENSE, SCRIPT_DESC, "", ""):
 	config = Config('autosort')
 
 	weechat.hook_config('autosort.*', 'on_config_changed',  '')
 	weechat.hook_completion('plugin_autosort', '', 'on_autosort_complete', '')
-	weechat.hook_command('autosort', command_description, '', '', command_completion, 'on_autosort_command', 'NULL')
-	weechat.hook_info('autosort_replace', info_replace_description, info_replace_arguments, 'on_info_replace', 'NULL')
+	weechat.hook_command('autosort', command_description, '', '', command_completion, 'on_autosort_command', '')
+	weechat.hook_info('autosort_replace', info_replace_description, info_replace_arguments, 'on_info_replace', '')
+	weechat.hook_info('autosort_order',   info_order_description,   info_order_arguments,   'on_info_order',   '')
 
 	apply_config()
