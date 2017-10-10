@@ -27,6 +27,7 @@
 # Changelog:
 # 3.0:
 #   * Switch to evaluated expressions for sorting.
+#   * Add `/autosort debug` command.
 #   * Add ${info:autosort_replace,from,to,text} to replace substrings in sort rules.
 #   * Add ${info:autosort_order,value,first,second,third} to ease writing sort rules.
 #   * Make tab completion context aware.
