@@ -20,7 +20,7 @@
 # Autosort automatically keeps your buffers sorted and grouped by server.
 # You can define your own sorting rules. See /help autosort for more details.
 #
-# http://github.com/de-vri-es/weechat-autosort
+# https://github.com/de-vri-es/weechat-autosort
 #
 
 #
