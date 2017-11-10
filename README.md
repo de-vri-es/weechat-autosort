@@ -6,9 +6,7 @@ The sort order can be customized by defining your own sort rules,
 but the default should be sane enough for most people.
 It can also group IRC channel/private buffers under their server buffer if you like.
 
-For the best effect, you may want to consider setting the option `irc.look.server_buffer` to `independent` and `buffers.look.indenting` to `on`.
-
-### Sort rules
+## Sort rules
 Autosort evaluates a list of eval expressions (see /help eval) and sorts the buffers based on evaluated result.
 Earlier rules will be considered first.
 Only if earlier rules produced identical results is the result of the next rule considered for sorting purposes.
@@ -18,7 +16,7 @@ You can debug your sort rules with the `/autosort debug` command, which will pri
 NOTE: The sort rules for version 3 are not compatible with version 2 or vice versa.
 You will have to manually port your old rules to version 3 if you have any.
 
-### Helper variables
+## Helper variables
 You may define helper variables for the main sort rules to keep your rules readable.
 They can be used in the main sort rules as variables.
 For example, a helper variable named `foo` can be accessed in a main rule with the string `${foo}`.
@@ -29,13 +27,31 @@ However, autosort adds a `replace` info hook that can be used inside eval expres
 For example, `${info:autosort_replace,#,,${buffer.name}}` will evaluate to the buffer name with all hash signs stripped.
 You can escape commas and backslashes inside the arguments by prefixing them with a backslash.
 
-### Automatic or manual sorting
+## Automatic or manual sorting
 By default, autosort will automatically sort your buffer list whenever a buffer is opened, merged, unmerged or renamed.
 This should keep your buffers sorted in almost all situations.
 However, you may wish to change the list of signals that cause your buffer list to be sorted.
 Simply edit the `autosort.sorting.signals` option to add or remove any signal you like.
 If you remove all signals you can still sort your buffers manually with the `/autosort sort` command.
 To prevent all automatic sorting, `autosort.sorting.sort_on_config_change` should also be set to off.
+
+## Recommended settings
+For the best visual effect, consider setting the following options:
+```
+/set irc.look.server_buffer independent
+/set buffers.look.indenting on
+```
+
+The first setting allows server buffers to be sorted independently,
+which is needed to create a hierarchical tree view of the server and channel buffers.
+The second one indents channel and private buffers in the buffer list of the `buffers.pl` script.
+
+If you are using the buflist plugin you could consider something like this:
+```
+/set buflist.format.indent "${color:237}${if:${buffer.next_buffer.local_variables.type}=~^(channel|private)$?├─:└─}"
+```
+
+This will use Unicode characters to draw a tree structure in the buflist.
 
 ## Commands
 
