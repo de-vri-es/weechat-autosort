@@ -27,6 +27,7 @@
 # Changelog:
 # 3.3:
 #   * Fix the /autosort debug command for unicode.
+#   * Update the default rules to work better with Slack.
 # 3.2:
 #   * Fix python3 compatiblity.
 # 3.1:
@@ -163,9 +164,9 @@ class Config:
 		'${irc_last}',
 		'${buffer.plugin.name}',
 		'${irc_raw_first}',
-		'${server}',
-		'${info:autosort_order,${type},server,*,channel,private}',
-		'${hashless_name}',
+		'${if:${plugin}==irc?${server}}',
+		'${if:${plugin}==irc?${info:autosort_order,${type},server,*,channel,private}}',
+		'${if:${plugin}==irc?${hashless_name}}',
 		'${buffer.full_name}',
 	])
 
