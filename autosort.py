@@ -25,6 +25,8 @@
 
 #
 # Changelog:
+# 3.4:
+#   * Fix bug in parsing empty arguments for info hooks.
 # 3.3:
 #   * Fix the /autosort debug command for unicode.
 #   * Update the default rules to work better with Slack.
@@ -71,7 +73,7 @@ import weechat
 
 SCRIPT_NAME     = 'autosort'
 SCRIPT_AUTHOR   = 'Maarten de Vries <maarten@de-vri.es>'
-SCRIPT_VERSION  = '3.3'
+SCRIPT_VERSION  = '3.4'
 SCRIPT_LICENSE  = 'GPL3'
 SCRIPT_DESC     = 'Flexible automatic (or manual) buffer sorting based on eval expressions.'
 
@@ -624,7 +626,7 @@ def on_config_changed(*args, **kwargs):
 	return weechat.WEECHAT_RC_OK
 
 def parse_arg(args):
-	if not args: return None, None
+	if not args: return '', None
 
 	result  = ''
 	escaped = False
@@ -643,10 +645,11 @@ def parse_args(args, max = None):
 	result = []
 	i = 0
 	while max is None or i < max:
+		i += 1
 		arg, args = parse_arg(args)
 		if arg is None: break
 		result.append(arg)
-		i += 1
+		if args is None: break
 	return result, args
 
 def on_info_replace(pointer, name, arguments):
