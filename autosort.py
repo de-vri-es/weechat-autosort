@@ -27,6 +27,7 @@
 # Changelog:
 # 3.4:
 #   * Fix bug in parsing empty arguments for info hooks.
+#   * Correct a few typos.
 # 3.3:
 #   * Fix the /autosort debug command for unicode.
 #   * Update the default rules to work better with Slack.
@@ -149,12 +150,12 @@ def decode_rules(blob):
 def decode_helpers(blob):
 	parsed = json.loads(blob)
 	if not isinstance(parsed, dict):
-		log('Malformed helpers, expected a JSON encoded dictonary but got a {0}. No helpers have been loaded. Please fix the setting manually.'.format(type(parsed)))
+		log('Malformed helpers, expected a JSON encoded dictionary but got a {0}. No helpers have been loaded. Please fix the setting manually.'.format(type(parsed)))
 		return {}
 
 	for key, value in parsed.items():
 		if not isinstance(value, (str, unicode)):
-			log('Helper "{0}" is not a string but a {1}. No helpers have been loaded. Please fix seting manually.'.format(key, type(value)))
+			log('Helper "{0}" is not a string but a {1}. No helpers have been loaded. Please fix setting manually.'.format(key, type(value)))
 			return {}
 	return parsed
 
@@ -431,7 +432,7 @@ def command_debug(buffer, command, args):
 		fullname = ensure_str(fullname)
 		result = [ensure_str(x) for x in result]
 		log('{0}: {1}'.format(fullname, result))
-	log('Computing evalutaion results took {0:.4f} seconds.'.format(elapsed))
+	log('Computing evaluation results took {0:.4f} seconds.'.format(elapsed))
 
 	return weechat.WEECHAT_RC_OK
 
@@ -576,7 +577,7 @@ def command_helper_swap(buffer, command, args):
 	return weechat.WEECHAT_RC_OK
 
 def call_command(buffer, command, args, subcommands):
-	''' Call a subccommand from a dictionary. '''
+	''' Call a subcommand from a dictionary. '''
 	subcommand, tail = pad(args.split(' ', 1), 2, '')
 	subcommand = subcommand.strip()
 	if (subcommand == ''):
