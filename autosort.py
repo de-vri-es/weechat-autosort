@@ -26,6 +26,7 @@
 #
 # Changelog:
 # 3.4:
+#   * Fix rate-limit of sorting to prevent high CPU load and lock-ups.
 #   * Fix bug in parsing empty arguments for info hooks.
 #   * Correct a few typos.
 # 3.3:
@@ -79,9 +80,12 @@ SCRIPT_LICENSE  = 'GPL3'
 SCRIPT_DESC     = 'Flexible automatic (or manual) buffer sorting based on eval expressions.'
 
 
-config = None
-hooks  = []
-timer  = None
+config             = None
+hooks              = []
+signal_delay_timer = None
+sort_limit_timer   = None
+sort_queued        = False
+
 
 # Make sure that unicode, bytes and str are always available in python2 and 3.
 # For python 2, str == bytes
@@ -183,6 +187,7 @@ class Config:
 	})
 
 	default_signal_delay = 5
+	default_sort_limit   = 100
 
 	default_signals = 'buffer_opened buffer_merged buffer_unmerged buffer_renamed'
 
@@ -199,6 +204,7 @@ class Config:
 		self.helpers          = {}
 		self.signals          = []
 		self.signal_delay     = Config.default_signal_delay,
+		self.sort_limit       = Config.default_sort_limit,
 		self.sort_on_config   = True
 
 		self.__case_sensitive = None
@@ -206,6 +212,7 @@ class Config:
 		self.__helpers        = None
 		self.__signals        = None
 		self.__signal_delay   = None
+		self.__sort_limit     = None
 		self.__sort_on_config = None
 
 		if not self.config_file:
@@ -276,6 +283,14 @@ class Config:
 			'', '', '', '', '', ''
 		)
 
+		self.__sort_limit = weechat.config_new_option(
+			self.config_file, self.sorting_section,
+			'sort_limit', 'integer',
+			'Minimum delay in milliseconds to wait after sorting before signals can trigger a sort again. This is effectively a rate limit on sorting. Keeping signal_delay low while setting this higher can reduce excessive sorting without a long initial delay.',
+			'', 0, 1000, str(Config.default_sort_limit), str(Config.default_sort_limit), 0,
+			'', '', '', '', '', ''
+		)
+
 		self.__sort_on_config = weechat.config_new_option(
 			self.config_file, self.sorting_section,
 			'sort_on_config_change', 'boolean',
@@ -305,6 +320,7 @@ class Config:
 		self.helpers        = decode_helpers(helpers_blob)
 		self.signals        = signals_blob.split()
 		self.signal_delay   = weechat.config_integer(self.__signal_delay)
+		self.sort_limit     = weechat.config_integer(self.__sort_limit)
 		self.sort_on_config = weechat.config_boolean(self.__sort_on_config)
 
 	def save_rules(self, run_callback = True):
@@ -594,20 +610,65 @@ def call_command(buffer, command, args, subcommands):
 	log('{0}: command not found'.format(' '.join(command)))
 	return weechat.WEECHAT_RC_ERROR
 
-def on_signal(*args, **kwargs):
-	global timer
-	''' Called whenever the buffer list changes. '''
-	if timer is not None:
-		weechat.unhook(timer)
-		timer = None
-	weechat.hook_timer(config.signal_delay, 0, 1, "on_timeout", "")
+def on_signal(data, signal, signal_data):
+	global signal_delay_timer
+	global sort_queued
+
+	# If the sort limit timeout is started, we're in the hold-off time after sorting, just queue a sort.
+	if sort_limit_timer is not None:
+		sort_queued = True
+		return weechat.WEECHAT_RC_OK
+
+	# If the signal delay timeout is started, a signal was recently received, so ignore this signal.
+	if signal_delay_timer is not None:
+		return weechat.WEECHAT_RC_OK
+
+	# Otherwise, start the signal delay timeout.
+	weechat.hook_timer(config.signal_delay, 0, 1, "on_signal_delay_timeout", "")
 	return weechat.WEECHAT_RC_OK
 
-def on_timeout(pointer, remaining_calls):
-	global timer
-	timer = None
+def on_signal_delay_timeout(pointer, remaining_calls):
+	""" Called when the signal_delay_timer triggers. """
+	global signal_delay_timer
+	global sort_limit_timer
+	global sort_queued
+
+	signal_delay_timer = None
+
+	# If the sort limit timeout was started, we're still in the no-sort period, so just queue a sort.
+	if sort_limit_timer is not None:
+		sort_queued = True
+		return weechat.WEECHAT_RC_OK
+
+	# Time to sort!
 	do_sort()
+
+	# Start the sort limit timeout if not disabled.
+	if config.sort_limit > 0:
+		sort_limit_timer = weechat.hook_timer(config.sort_limit, 0, 1, "on_sort_limit_timeout", "")
+
 	return weechat.WEECHAT_RC_OK
+
+def on_sort_limit_timeout(pointer, remainin_calls):
+	""" Called when de sort_limit_timer triggers. """
+	global sort_limit_timer
+	global sort_queued
+
+	# If no signal was received during the timeout, we're done.
+	if not sort_queued:
+		sort_limit_timer = None
+		return weechat.WEECHAT_RC_OK
+
+	# Otherwise it's time to sort.
+	do_sort()
+	sort_queued = False
+
+	# Start the sort limit timeout again if not disabled.
+	if config.sort_limit > 0:
+		sort_limit_timer = weechat.hook_timer(config.sort_limit, 0, 1, "on_sort_limit_timeout", "")
+
+	return weechat.WEECHAT_RC_OK
+
 
 def apply_config():
 	# Unhook all signals and hook the new ones.
