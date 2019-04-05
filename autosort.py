@@ -28,6 +28,7 @@
 # 3.4:
 #   * Fix rate-limit of sorting to prevent high CPU load and lock-ups.
 #   * Fix bug in parsing empty arguments for info hooks.
+#   * Add debug_log option to aid with debugging.
 #   * Correct a few typos.
 # 3.3:
 #   * Fix the /autosort debug command for unicode.
@@ -206,6 +207,7 @@ class Config:
 		self.signal_delay     = Config.default_signal_delay,
 		self.sort_limit       = Config.default_sort_limit,
 		self.sort_on_config   = True
+		self.debug_log        = False
 
 		self.__case_sensitive = None
 		self.__rules          = None
@@ -214,6 +216,7 @@ class Config:
 		self.__signal_delay   = None
 		self.__sort_limit     = None
 		self.__sort_on_config = None
+		self.__debug_log      = None
 
 		if not self.config_file:
 			log('Failed to initialize configuration file "{0}".'.format(self.filename))
@@ -299,6 +302,14 @@ class Config:
 			'', '', '', '', '', ''
 		)
 
+		self.__debug_log = weechat.config_new_option(
+			self.config_file, self.sorting_section,
+			'debug_log', 'boolean',
+			'If enabled, print more debug messages. Not recommended for normal usage.',
+			'', 0, 0, 'off', 'off', 0,
+			'', '', '', '', '', ''
+		)
+
 		if weechat.config_read(self.config_file) != weechat.WEECHAT_RC_OK:
 			log('Failed to load configuration file.')
 
@@ -322,6 +333,7 @@ class Config:
 		self.signal_delay   = weechat.config_integer(self.__signal_delay)
 		self.sort_limit     = weechat.config_integer(self.__sort_limit)
 		self.sort_on_config = weechat.config_boolean(self.__sort_on_config)
+		self.debug_log      = weechat.config_boolean(self.__debug_log)
 
 	def save_rules(self, run_callback = True):
 		''' Save the current rules to the configuration. '''
@@ -336,10 +348,12 @@ def pad(sequence, length, padding = None):
 	''' Pad a list until is has a certain length. '''
 	return sequence + [padding] * max(0, (length - len(sequence)))
 
-
 def log(message, buffer = 'NULL'):
 	weechat.prnt(buffer, 'autosort: {0}'.format(message))
 
+def debug(message, buffer = 'NULL'):
+	if config.debug_log:
+		weechat.prnt(buffer, 'autosort: debug: {0}'.format(message))
 
 def get_buffers():
 	''' Get a list of all the buffers in weechat. '''
@@ -415,18 +429,23 @@ def split_args(args, expected, optional = 0):
 		raise HumanReadableError('Expected at least {0} arguments, got {1}.'.format(expected, len(split)))
 	return split[:-1] + pad(split[-1].split(' ', optional), optional + 1, '')
 
-def do_sort():
+def do_sort(verbose = False):
+	start = perf_counter()
+
 	hdata, buffers = get_buffers()
 	buffers = merge_buffer_list(buffers)
 	buffers = sort_buffers(hdata, buffers, config.rules, config.helpers, config.case_sensitive)
 	apply_buffer_order(buffers)
 
+	elapsed = perf_counter() - start
+	if verbose:
+		log("Finished sorting buffers in {0:.4f} seconds.".format(elapsed))
+	else:
+		debug("Finished sorting buffers in {0:.4f} seconds.".format(elapsed))
+
 def command_sort(buffer, command, args):
 	''' Sort the buffers and print a confirmation. '''
-	start = perf_counter()
-	do_sort()
-	elapsed = perf_counter() - start
-	log("Finished sorting buffers in {0:.4f} seconds.".format(elapsed))
+	do_sort(True)
 	return weechat.WEECHAT_RC_OK
 
 def command_debug(buffer, command, args):
@@ -616,14 +635,20 @@ def on_signal(data, signal, signal_data):
 
 	# If the sort limit timeout is started, we're in the hold-off time after sorting, just queue a sort.
 	if sort_limit_timer is not None:
+		if sort_queued:
+			debug('Signal {0} ignored, sort limit timeout is active and sort is already queued.'.format(signal))
+		else:
+			debug('Signal {0} received but sort limit timeout is active, sort is now queued.'.format(signal))
 		sort_queued = True
 		return weechat.WEECHAT_RC_OK
 
 	# If the signal delay timeout is started, a signal was recently received, so ignore this signal.
 	if signal_delay_timer is not None:
+		debug('Signal {0} ignored, signal delay timeout active.'.format(signal))
 		return weechat.WEECHAT_RC_OK
 
 	# Otherwise, start the signal delay timeout.
+	debug('Signal {0} received, starting signal delay timeout of {1} ms.'.format(signal, config.signal_delay))
 	weechat.hook_timer(config.signal_delay, 0, 1, "on_signal_delay_timeout", "")
 	return weechat.WEECHAT_RC_OK
 
@@ -637,14 +662,17 @@ def on_signal_delay_timeout(pointer, remaining_calls):
 
 	# If the sort limit timeout was started, we're still in the no-sort period, so just queue a sort.
 	if sort_limit_timer is not None:
+		debug('Signal delay timeout expired, but sort limit timeout is active, sort is now queued.')
 		sort_queued = True
 		return weechat.WEECHAT_RC_OK
 
 	# Time to sort!
+	debug('Signal delay timeout expired, starting sort.')
 	do_sort()
 
 	# Start the sort limit timeout if not disabled.
 	if config.sort_limit > 0:
+		debug('Starting sort limit timeout of {0} ms.'.format(config.sort_limit))
 		sort_limit_timer = weechat.hook_timer(config.sort_limit, 0, 1, "on_sort_limit_timeout", "")
 
 	return weechat.WEECHAT_RC_OK
@@ -656,15 +684,18 @@ def on_sort_limit_timeout(pointer, remainin_calls):
 
 	# If no signal was received during the timeout, we're done.
 	if not sort_queued:
+		debug('Sort limit timeout expired without receiving a signal.')
 		sort_limit_timer = None
 		return weechat.WEECHAT_RC_OK
 
 	# Otherwise it's time to sort.
+	debug('Signal received during sort limit timeout, starting queued sort.')
 	do_sort()
 	sort_queued = False
 
 	# Start the sort limit timeout again if not disabled.
 	if config.sort_limit > 0:
+		debug('Starting sort limit timeout of {0} ms.'.format(config.sort_limit))
 		sort_limit_timer = weechat.hook_timer(config.sort_limit, 0, 1, "on_sort_limit_timeout", "")
 
 	return weechat.WEECHAT_RC_OK
@@ -678,6 +709,7 @@ def apply_config():
 		hooks.append(weechat.hook_signal(signal, 'on_signal', ''))
 
 	if config.sort_on_config:
+		debug('Sorting because configuration changed.')
 		do_sort()
 
 def on_config_changed(*args, **kwargs):
