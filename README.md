@@ -21,12 +21,6 @@ You may define helper variables for the main sort rules to keep your rules reada
 They can be used in the main sort rules as variables.
 For example, a helper variable named `foo` can be accessed in a main rule with the string `${foo}`.
 
-## Replacing substrings
-There is no default method for replacing text inside eval expressions.
-However, autosort adds a `replace` info hook that can be used inside eval expressions: `${info:autosort_replace,from,to,text}`.
-For example, `${info:autosort_replace,#,,${buffer.name}}` will evaluate to the buffer name with all hash signs stripped.
-You can escape commas and backslashes inside the arguments by prefixing them with a backslash.
-
 ## Automatic or manual sorting
 By default, autosort will automatically sort your buffer list whenever a buffer is opened, merged, unmerged or renamed.
 This should keep your buffers sorted in almost all situations.
@@ -129,3 +123,38 @@ Rename a helper variable.
 /autosort helpers swap <name_a> <name_b>
 ```
 Swap the expressions of two helper variables in the list.
+
+## Info hooks
+Autosort comes with a number of info hooks to add some extra functionality to regular weechat eval strings.
+Info hooks can be used in eval strings in the form of `${info:some_hook,arguments}`.
+
+Commas and backslashes in arguments to autosort info hooks (except for `${info:autosort_escape}`) must be escaped with a backslash.
+
+```
+${info:autosort_replace,pattern,replacement,source}
+```
+Replace all occurrences of `pattern` with `replacement` in the string `source`.
+Can be used to ignore certain strings when sorting by replacing them with an empty string.
+
+For example: `${info:autosort_replace,cat,dog,the dog is meowing}` expands to "`the cat is meowing`".
+
+```
+${info:autosort_order,value,option0,option1,option2,...}
+```
+Generate a zero-padded number that corresponds to the index of `value` in the list of options.
+If one of the options is the special value `*`, then any value not explicitly mentioned will be sorted at that position.
+Otherwise, any value that does not match an option is assigned the highest number available.
+Can be used to easily sort buffers based on a manual sequence.
+
+For example: `${info:autosort_order,${server},freenode,oftc,efnet}` will sort freenode before oftc, followed by efnet and then any remaining servers.
+Alternatively, `${info:autosort_order,${server},freenode,oftc,*,efnet}` will sort any unlisted servers after freenode and oftc, but before efnet.
+
+```
+${info:autosort_escape,text}
+```
+Escape commas and backslashes in `text` by prepending them with a backslash.
+This is mainly useful to pass arbitrary eval strings as arguments to other autosort info hooks.
+Otherwise, an eval string that expands to something with a comma would be interpreted as multiple arguments.
+
+For example, it can be used to safely pass buffer names to `${info:autosort_replace}` like so:
+`${info:autosort_replace,##,#,${info:autosort_escape,${buffer.name}}}`.
