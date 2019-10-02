@@ -173,8 +173,8 @@ class Config:
 
 	default_rules = json.dumps([
 		'${core_first}',
-		'${irc_last}',
-		'${buffer.plugin.name}',
+		'${info:autosort_order,${info:autosort_escape,${script_or_plugin}},core,*,irc,bitlbee,matrix,slack}'
+		'${script_or_plugin}',
 		'${irc_raw_first}',
 		'${server}',
 		'${info:autosort_order,${type},server,*,channel,private}',
@@ -183,12 +183,11 @@ class Config:
 	])
 
 	default_helpers = json.dumps({
-		'core_first':     '${if:${buffer.full_name}!=core.weechat}',
-		'irc_first':      '${if:${buffer.plugin.name}!=irc}',
-		'irc_last':       '${if:${buffer.plugin.name}==irc}',
-		'irc_raw_first':  '${if:${buffer.full_name}!=irc.irc_raw}',
-		'irc_raw_last':   '${if:${buffer.full_name}==irc.irc_raw}',
-		'hashless_name':  '${info:autosort_replace,#,,${info:autosort_escape,${buffer.name}}}',
+		'core_first':       '${if:${buffer.full_name}!=core.weechat}',
+		'irc_raw_first':    '${if:${buffer.full_name}!=irc.irc_raw}',
+		'irc_raw_last':     '${if:${buffer.full_name}==irc.irc_raw}',
+		'hashless_name':    '${info:autosort_replace,#,,${info:autosort_escape,${buffer.name}}}',
+		'script_or_plugin': '${if:${script}?${script}:${plugin}}',
 	})
 
 	default_signal_delay = 5
