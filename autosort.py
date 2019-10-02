@@ -176,12 +176,9 @@ class Config:
 		'${irc_last}',
 		'${buffer.plugin.name}',
 		'${irc_raw_first}',
-		'${if:${plugin}==irc?${server}}',
-		'${if:${plugin}==irc?${info:autosort_order,${type},server,*,channel,private}}',
-		'${if:${plugin}==irc?${hashless_name}}',
-		'${if:${plugin}==python?${server}}',
-		'${if:${plugin}==python?${info:autosort_order,${type},server,*,channel,private}}',
-		'${if:${plugin}==python?${hashless_name}}',
+		'${server}',
+		'${info:autosort_order,${type},server,*,channel,private}',
+		'${hashless_name}',
 		'${buffer.full_name}',
 	])
 
