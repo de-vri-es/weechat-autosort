@@ -26,6 +26,7 @@
 #
 # Changelog:
 # 3,8:
+#   * Fix relative sorting on script name in default rules.
 #   * Document a useful property of stable sort algorithms.
 # 3.7:
 #   * Make default rules work with bitlbee, matrix and slack.
@@ -177,7 +178,7 @@ class Config:
 
 	default_rules = json.dumps([
 		'${core_first}',
-		'${info:autosort_order,${info:autosort_escape,${script_or_plugin}},core,*,irc,bitlbee,matrix,slack}'
+		'${info:autosort_order,${info:autosort_escape,${script_or_plugin}},core,*,irc,bitlbee,matrix,slack}',
 		'${script_or_plugin}',
 		'${irc_raw_first}',
 		'${server}',
@@ -191,7 +192,7 @@ class Config:
 		'irc_raw_first':    '${if:${buffer.full_name}!=irc.irc_raw}',
 		'irc_raw_last':     '${if:${buffer.full_name}==irc.irc_raw}',
 		'hashless_name':    '${info:autosort_replace,#,,${info:autosort_escape,${buffer.name}}}',
-		'script_or_plugin': '${if:${script}?${script}:${plugin}}',
+		'script_or_plugin': '${if:${script_name}?${script_name}:${plugin}}',
 	})
 
 	default_signal_delay = 5
