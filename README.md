@@ -6,6 +6,9 @@ The sort order can be customized by defining your own sort rules,
 but the default should be sane enough for most people.
 It can also group IRC channel/private buffers under their server buffer if you like.
 
+Autosort uses a stable sorting algorithm, meaning that you can manually move buffers
+to change their relative order, if they sort equal with your rule set.
+
 ## Sort rules
 Autosort evaluates a list of eval expressions (see /help eval) and sorts the buffers based on evaluated result.
 Earlier rules will be considered first.

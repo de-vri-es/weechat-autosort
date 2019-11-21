@@ -25,6 +25,8 @@
 
 #
 # Changelog:
+# 3,8:
+#   * Document a useful property of stable sort algorithms.
 # 3.7:
 #   * Make default rules work with bitlbee, matrix and slack.
 # 3.6:
@@ -961,6 +963,9 @@ Autosort is a weechat script to automatically keep your buffers sorted. The sort
 order can be customized by defining your own sort rules, but the default should
 be sane enough for most people. It can also group IRC channel/private buffers
 under their server buffer if you like.
+
+Autosort uses a stable sorting algorithm, meaning that you can manually move buffers
+to change their relative order, if they sort equal with your rule set.
 
 {*white}# Sort rules{reset}
 Autosort evaluates a list of eval expressions (see {*default}/help eval{reset}) and sorts the
