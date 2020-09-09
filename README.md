@@ -36,19 +36,16 @@ To prevent all automatic sorting, `autosort.sorting.sort_on_config_change` shoul
 For the best visual effect, consider setting the following options:
 ```
 /set irc.look.server_buffer independent
-/set buffers.look.indenting on
 ```
 
-The first setting allows server buffers to be sorted independently,
+This setting allows server buffers to be sorted independently,
 which is needed to create a hierarchical tree view of the server and channel buffers.
-The second one indents channel and private buffers in the buffer list of the `buffers.pl` script.
 
-If you are using the buflist plugin you could consider something like this:
+If you are using the buflist plugin you can (ab)use Unicode to draw a tree
+structure with the following setting (modify to suit your need):
 ```
 /set buflist.format.indent "${color:237}${if:${buffer.next_buffer.local_variables.type}=~^(channel|private)$?├─:└─}"
 ```
-
-This will use Unicode characters to draw a tree structure in the buflist.
 
 ## Commands
 
