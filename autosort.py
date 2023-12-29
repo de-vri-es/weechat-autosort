@@ -830,7 +830,7 @@ def on_autosort_command(data, buffer, args):
 
 def add_completions(completion, words):
 	for word in words:
-		weechat.hook_completion_list_add(completion, word, 0, weechat.WEECHAT_LIST_POS_END)
+		weechat.completion_list_add(completion, word, 0, weechat.WEECHAT_LIST_POS_END)
 
 def autosort_complete_rules(words, completion):
 	if len(words) == 0:
