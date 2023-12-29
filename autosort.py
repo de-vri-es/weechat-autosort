@@ -1002,14 +1002,14 @@ If you remove all signals you can still sort your buffers manually with the
 
 {*white}# Recommended settings
 For the best visual effect, consider setting the following options:
-  {*white}/set {cyan}irc.look.server_buffer{reset} {brown}independent{reset}
+{*white}/set {cyan}irc.look.server_buffer{reset} {brown}independent{reset}
 
 This setting allows server buffers to be sorted independently, which is
 needed to create a hierarchical tree view of the server and channel buffers.
 
 If you are using the {*default}buflist{reset} plugin you can (ab)use Unicode to draw a tree
 structure with the following setting (modify to suit your need):
-  {*white}/set {cyan}buflist.format.indent {brown}"${{color:237}}${{if:${{buffer.next_buffer.local_variables.type}}=~^(channel|private)$?├─:└─}}"{reset}
+{*white}/set {cyan}buflist.format.indent {brown}"${{color:237}}${{if:${{buffer.next_buffer.local_variables.type}}=~^(channel|private)$?├─:└─}}"{reset}
 '''
 
 command_completion = '%(plugin_autosort) %(plugin_autosort) %(plugin_autosort) %(plugin_autosort) %(plugin_autosort)'
