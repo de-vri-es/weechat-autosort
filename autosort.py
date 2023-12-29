@@ -25,6 +25,8 @@
 
 #
 # Changelog:
+# main:
+#   * Fix exception in `/autosort helpers swap`.
 # 3.9:
 #   * Remove `buffers.pl` from recommended settings.
 # 3,8:
@@ -616,7 +618,6 @@ def command_helper_swap(buffer, command, args):
 	except KeyError as e:
 		raise HumanReadableError('No such helper: {0}'.format(e.args[0]))
 
-	config.helpers.swap(index_a, index_b)
 	config.save_helpers()
 	command_helper_list(buffer, command, '')
 	return weechat.WEECHAT_RC_OK
